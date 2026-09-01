@@ -371,7 +371,7 @@
     background:color-mix(in srgb, var(--subj) 14%, white);
     border-left:4px solid var(--subj);
   }
-  td.has-note::after{
+  .has-note::after{
     content:'';
     position:absolute;
     top:4px;right:4px;
@@ -789,6 +789,16 @@ function setNote(day, rowIndex, text){
 }
 const DAY_NAMES = {1:'Понеділок',2:'Вівторок',3:'Середа',4:'Четвер',5:"П'ятниця"};
 
+// Спільний редактор нотатки — використовується і таблицею "весь тиждень",
+// і списком "тільки сьогодні". onSaved(hasNote) оновлює індикатор у виклику.
+function editNoteFor(day, rowIndex, subject, onSaved){
+  const existing = getNote(day, rowIndex);
+  const text = window.prompt('Нотатка / домашнє завдання\n'+subject+' ('+DAY_NAMES[day]+')', existing);
+  if(text === null) return; // скасовано
+  setNote(day, rowIndex, text.trim());
+  onSaved(!!text.trim());
+}
+
 function setupSubjectCellsOnce(){
   const rows = Array.from(document.querySelectorAll('#schedule tr[data-start]'));
   rows.forEach((tr, rowIndex) => {
@@ -800,11 +810,7 @@ function setupSubjectCellsOnce(){
       cell.classList.add('subject-tinted','subject-cell');
       if(getNote(day, rowIndex)) cell.classList.add('has-note');
       cell.addEventListener('click', () => {
-        const existing = getNote(day, rowIndex);
-        const text = window.prompt('Нотатка / домашнє завдання\n'+subject+' ('+DAY_NAMES[day]+')', existing);
-        if(text === null) return; // скасовано
-        setNote(day, rowIndex, text.trim());
-        cell.classList.toggle('has-note', !!text.trim());
+        editNoteFor(day, rowIndex, subject, (hasNote) => cell.classList.toggle('has-note', hasNote));
       });
     }
   });
@@ -836,6 +842,7 @@ function updateViewToggleLabel(){
 
 function renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes){
   const container = document.getElementById('todayView');
+  container.dataset.day = jsDay;
   if(jsDay < 1 || jsDay > 5){
     container.innerHTML = '<div class="today-empty">Сьогодні вихідний — уроків немає</div>';
     return;
@@ -845,11 +852,12 @@ function renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes){
     const cell = tr.children[jsDay+1];
     const subject = cell ? cell.textContent.trim() : '—';
     if(subject === '—') return;
-    let cls = 'today-row';
+    let cls = 'today-row subject-cell';
     if(i === matchedIdx) cls += ' current';
     else if(i === nextIdx) cls += ' next';
     else if(typeof nowMinutes === 'number' && toMinutes(tr.dataset.end) <= nowMinutes) cls += ' past';
-    html += '<div class="'+cls+'">'
+    if(getNote(jsDay, i)) cls += ' has-note';
+    html += '<div class="'+cls+'" data-row="'+i+'">'
       + '<div class="today-num">'+(i+1)+'</div>'
       + '<div class="today-time">'+tr.dataset.start.replace(':','.')+'–'+tr.dataset.end.replace(':','.')+'</div>'
       + '<div class="today-subject">'+subject+'</div>'
@@ -857,6 +865,17 @@ function renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes){
   });
   container.innerHTML = html || '<div class="today-empty">Уроків немає</div>';
 }
+
+// Клік по рядку "тільки сьогодні" — та ж нотатка, що й у таблиці (делегування,
+// бо рядки перемальовуються щосекунди).
+document.getElementById('todayView').addEventListener('click', (e) => {
+  const row = e.target.closest('.today-row[data-row]');
+  if(!row) return;
+  const day = Number(row.closest('#todayView').dataset.day);
+  const rowIndex = Number(row.dataset.row);
+  const subject = row.querySelector('.today-subject').textContent.trim();
+  editNoteFor(day, rowIndex, subject, (hasNote) => row.classList.toggle('has-note', hasNote));
+});
 
 /* ==================== ЧАС ==================== */
 function toMinutes(hhmm){
