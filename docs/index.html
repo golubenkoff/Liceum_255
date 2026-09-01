@@ -156,6 +156,33 @@
     font-weight:700;
   }
 
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:20px;
+    margin-top:16px;
+    padding:14px 18px;
+    background:rgba(255,255,255,0.06);
+    border-radius:12px;
+  }
+  .legend-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    color:#cbd5e1;
+  }
+  .legend-swatch{
+    width:16px;
+    height:16px;
+    border-radius:4px;
+    flex-shrink:0;
+  }
+  .legend-swatch.current-row{background:#dcfce7;border:2px solid #16a34a;}
+  .legend-swatch.current-cell{background:#22c55e;border:2px solid #166534;}
+  .legend-swatch.break-row{background:#fef3c7;border:2px solid #d97706;}
+
   .footer{
     text-align:center;
     color:#94a3b8;
@@ -252,6 +279,12 @@
         <td class="empty">—</td>
       </tr>
     </table>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch current-row"></span>Зелений рядок — поточний урок</div>
+    <div class="legend-item"><span class="legend-swatch current-cell"></span>Яскрава клітинка з рамкою — поточний урок сьогодні</div>
+    <div class="legend-item"><span class="legend-swatch break-row"></span>Жовтий рядок — перерва / наступний урок</div>
   </div>
 
   <div class="footer">Розклад складений: 30.8.2026 · час визначається за годинником пристрою</div>
