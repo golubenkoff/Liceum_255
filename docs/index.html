@@ -2,31 +2,161 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Розклад 7Б — поточний урок</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#16a34a" id="themeColorMeta">
 <style>
   *{box-sizing:border-box;}
+
+  /* ---------- тема (світла/темна) ---------- */
+  :root{
+    --body-grad-1:#0f172a;
+    --body-grad-2:#1e1b4b;
+    --h1-color:#f8fafc;
+    --sub-color:#94a3b8;
+    --legend-bg:rgba(255,255,255,0.06);
+    --legend-text:#cbd5e1;
+    --footer-color:#94a3b8;
+    --panel-bg:#ffffff;
+    --panel-text:#1e293b;
+    --panel-border:#e2e8f0;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme]){
+      --body-grad-1:#e0f2fe;
+      --body-grad-2:#f8fafc;
+      --h1-color:#0f172a;
+      --sub-color:#475569;
+      --legend-bg:rgba(15,23,42,0.05);
+      --legend-text:#334155;
+      --footer-color:#64748b;
+    }
+  }
+  html[data-theme="light"]{
+    --body-grad-1:#e0f2fe;
+    --body-grad-2:#f8fafc;
+    --h1-color:#0f172a;
+    --sub-color:#475569;
+    --legend-bg:rgba(15,23,42,0.05);
+    --legend-text:#334155;
+    --footer-color:#64748b;
+  }
+  html[data-theme="dark"]{
+    --body-grad-1:#0f172a;
+    --body-grad-2:#1e1b4b;
+    --h1-color:#f8fafc;
+    --sub-color:#94a3b8;
+    --legend-bg:rgba(255,255,255,0.06);
+    --legend-text:#cbd5e1;
+    --footer-color:#94a3b8;
+  }
+
   body{
     font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
     margin:0;
     padding:32px 16px;
     display:flex;
     justify-content:center;
-    background:linear-gradient(135deg,#0f172a,#1e1b4b);
+    background:linear-gradient(135deg,var(--body-grad-1),var(--body-grad-2));
     min-height:100vh;
   }
   .wrap{max-width:900px;width:100%;}
+
+  .top-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    gap:8px;
+    position:relative;
+  }
   h1{
     text-align:center;
     margin:0 0 4px;
     font-size:28px;
-    color:#f8fafc;
+    color:var(--h1-color);
   }
   p.sub{
     text-align:center;
     margin:0 0 24px;
-    color:#94a3b8;
+    color:var(--sub-color);
     font-size:14px;
   }
+  .gear-btn{
+    position:absolute;
+    right:0;
+    top:0;
+    background:var(--legend-bg);
+    border:1px solid var(--panel-border);
+    color:var(--h1-color);
+    border-radius:10px;
+    width:38px;
+    height:38px;
+    font-size:18px;
+    cursor:pointer;
+    line-height:1;
+  }
+  .gear-btn:hover{filter:brightness(1.15);}
+
+  /* ---------- панель налаштувань ---------- */
+  .settings-panel{
+    background:var(--panel-bg);
+    color:var(--panel-text);
+    border-radius:16px;
+    padding:18px 20px;
+    margin:0 0 20px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.35);
+  }
+  .settings-panel[hidden]{display:none;}
+  .settings-panel h3{margin:0 0 14px;font-size:15px;}
+  .setting-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:9px 0;
+    border-bottom:1px solid var(--panel-border);
+    font-size:14px;
+  }
+  .setting-row:last-child{border-bottom:none;}
+  .theme-buttons{display:flex;gap:6px;}
+  .theme-buttons button{
+    border:1px solid var(--panel-border);
+    background:#fff;
+    color:#1e293b;
+    padding:5px 10px;
+    border-radius:8px;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .theme-buttons button.active{background:#16a34a;color:#fff;border-color:#16a34a;}
+  .switch{
+    position:relative;
+    width:42px;
+    height:24px;
+    flex-shrink:0;
+  }
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .slider{
+    position:absolute;inset:0;
+    background:#cbd5e1;
+    border-radius:24px;
+    cursor:pointer;
+    transition:.2s;
+  }
+  .switch .slider:before{
+    content:'';
+    position:absolute;
+    width:18px;height:18px;
+    left:3px;top:3px;
+    background:#fff;
+    border-radius:50%;
+    transition:.2s;
+  }
+  .switch input:checked + .slider{background:#16a34a;}
+  .switch input:checked + .slider:before{transform:translateX(18px);}
 
   /* ---------- статус-карточка ---------- */
   .status-card{
@@ -35,7 +165,7 @@
     padding:28px 24px;
     text-align:center;
     box-shadow:0 20px 50px rgba(0,0,0,0.4);
-    margin-bottom:28px;
+    margin-bottom:16px;
   }
   .status-card.lesson{
     background:linear-gradient(135deg,#dcfce7,#ffffff);
@@ -45,6 +175,9 @@
   }
   .status-card.done, .status-card.weekend, .status-card.before{
     background:linear-gradient(135deg,#e2e8f0,#ffffff);
+  }
+  .status-card.holiday{
+    background:linear-gradient(135deg,#e0e7ff,#ffffff);
   }
   .state-label{
     font-size:14px;
@@ -56,6 +189,7 @@
   .state-label.lesson{color:#166534;}
   .state-label.break{color:#b45309;}
   .state-label.done, .state-label.weekend, .state-label.before{color:#475569;}
+  .state-label.holiday{color:#4338ca;}
 
   .lesson-name{
     font-size:30px;
@@ -82,6 +216,27 @@
     margin-bottom:18px;
   }
 
+  .progress-wrap{display:none;margin:10px auto 20px;max-width:320px;}
+  .status-card.progress-mode .timer,
+  .status-card.progress-mode .timer-caption{display:none;}
+  .status-card.progress-mode .progress-wrap{display:block;}
+  .progress-track{
+    background:#e2e8f0;
+    border-radius:999px;
+    height:14px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background:#16a34a;
+    border-radius:999px;
+    transition:width 1s linear;
+  }
+  .timer.break ~ .progress-wrap .progress-fill,
+  .status-card.break .progress-fill{background:#d97706;}
+  .progress-pct{margin-top:6px;font-size:13px;color:#64748b;font-variant-numeric:tabular-nums;}
+
   .next-info{
     font-size:15px;
     color:#475569;
@@ -90,6 +245,52 @@
   }
   .next-info b{color:#1e293b;}
 
+  /* ---------- перемикач вигляду ---------- */
+  .view-toggle{
+    display:flex;
+    justify-content:center;
+    margin-bottom:14px;
+  }
+  .view-toggle button{
+    background:var(--legend-bg);
+    color:var(--legend-text);
+    border:1px solid var(--panel-border);
+    padding:8px 16px;
+    border-radius:999px;
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  /* ---------- вигляд "тільки сьогодні" ---------- */
+  #todayView{display:none;}
+  .wrap[data-view="today"] .card{display:none;}
+  .wrap[data-view="today"] #todayView{display:block;}
+  #todayView .card{display:block !important;}
+  .today-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 16px;
+    border-bottom:1px solid #e2e8f0;
+    font-size:14px;
+  }
+  .today-row:last-child{border-bottom:none;}
+  .today-row.current{background:#dcfce7;font-weight:700;}
+  .today-row.next{background:#fef3c7;font-weight:700;}
+  .today-row.past{opacity:.45;filter:grayscale(70%);}
+  .today-num{
+    width:26px;height:26px;
+    border-radius:50%;
+    background:#1e293b;
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;
+    flex-shrink:0;
+  }
+  .today-time{color:#64748b;font-size:12px;width:90px;flex-shrink:0;}
+  .today-subject{flex:1;}
+  .today-empty{padding:20px;text-align:center;color:#94a3b8;font-size:14px;}
+
   /* ---------- таблица ---------- */
   .card{
     background:#fff;
@@ -97,8 +298,10 @@
     overflow:hidden;
     box-shadow:0 20px 50px rgba(0,0,0,0.35);
   }
+  .table-scroll{overflow-x:auto;}
   table{
     width:100%;
+    min-width:600px;
     border-collapse:collapse;
     font-size:14px;
   }
@@ -143,6 +346,12 @@
   }
   th.current-day{background:#16a34a;}
 
+  /* урок сьогодні, який уже минув — приглушений */
+  td.past-cell{
+    opacity:.4;
+    filter:grayscale(75%);
+  }
+
   tr.break-row{background:#fef3c7;}
   tr.break-row td:first-child,
   tr.break-row td.time{
@@ -156,6 +365,83 @@
     font-weight:700;
   }
 
+  /* ---------- кольори предметів (опційно) ---------- */
+  .subject-cell{cursor:pointer;position:relative;}
+  table.subject-colors-on td.subject-tinted{
+    background:color-mix(in srgb, var(--subj) 14%, white);
+    border-left:4px solid var(--subj);
+  }
+  td.has-note::after{
+    content:'';
+    position:absolute;
+    top:4px;right:4px;
+    width:7px;height:7px;
+    border-radius:50%;
+    background:#f59e0b;
+    box-shadow:0 0 0 1px #fff;
+  }
+
+  /* ---------- встановлення застосунку ---------- */
+  .install-card{
+    background:var(--panel-bg);
+    color:var(--panel-text);
+    border-radius:16px;
+    padding:20px 22px;
+    margin-top:16px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.3);
+  }
+  .install-card h3{margin:0 0 8px;font-size:16px;}
+  .install-lead{margin:0 0 14px;font-size:13px;color:#64748b;line-height:1.5;}
+  .install-status{
+    background:#dcfce7;
+    color:#166534;
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:12px;
+  }
+  .install-btn{
+    display:block;
+    width:100%;
+    background:#16a34a;
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    padding:13px;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    margin-bottom:14px;
+  }
+  .install-btn:hover{filter:brightness(1.08);}
+  #installInstructions details{
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:10px 14px;
+    margin-bottom:8px;
+  }
+  #installInstructions summary{
+    cursor:pointer;
+    font-size:13px;
+    font-weight:600;
+  }
+  #installInstructions ol{
+    margin:10px 0 2px;
+    padding-left:20px;
+    font-size:13px;
+    line-height:1.6;
+    color:#334155;
+  }
+
+  .footer{
+    text-align:center;
+    color:var(--footer-color);
+    font-size:12px;
+    margin-top:16px;
+  }
+
+  /* ---------- легенда ---------- */
   .legend{
     display:flex;
     flex-wrap:wrap;
@@ -163,7 +449,7 @@
     gap:20px;
     margin-top:16px;
     padding:14px 18px;
-    background:rgba(255,255,255,0.06);
+    background:var(--legend-bg);
     border-radius:12px;
   }
   .legend-item{
@@ -171,7 +457,7 @@
     align-items:center;
     gap:8px;
     font-size:13px;
-    color:#cbd5e1;
+    color:var(--legend-text);
   }
   .legend-swatch{
     width:16px;
@@ -182,29 +468,71 @@
   .legend-swatch.current-row{background:#dcfce7;border:2px solid #16a34a;}
   .legend-swatch.current-cell{background:#22c55e;border:2px solid #166534;}
   .legend-swatch.break-row{background:#fef3c7;border:2px solid #d97706;}
-
-  .footer{
-    text-align:center;
-    color:#94a3b8;
-    font-size:12px;
-    margin-top:16px;
-  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>7-Б клас</h1>
-  <p class="sub">Ліцей № 255 · Класний керівник: Лапач М.П.</p>
+<div class="wrap" id="wrap" data-view="week">
+  <div class="top-row">
+    <div>
+      <h1>7-Б клас</h1>
+      <p class="sub">Ліцей № 255 · Класний керівник: Лапач М.П.</p>
+    </div>
+    <button type="button" class="gear-btn" id="gearBtn" title="Налаштування" aria-label="Налаштування">⚙</button>
+  </div>
+
+  <div class="settings-panel" id="settingsPanel" hidden>
+    <h3>Налаштування</h3>
+    <div class="setting-row">
+      <span>Тема</span>
+      <div class="theme-buttons" id="themeButtons">
+        <button type="button" data-theme-value="auto">Авто</button>
+        <button type="button" data-theme-value="light">Світла</button>
+        <button type="button" data-theme-value="dark">Темна</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <span>Кольори предметів у таблиці</span>
+      <label class="switch">
+        <input type="checkbox" id="toggleColors">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span>Прогрес-бар замість таймера</span>
+      <label class="switch">
+        <input type="checkbox" id="toggleProgress">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span>Звук + вібро при зміні уроку/перерви</span>
+      <label class="switch">
+        <input type="checkbox" id="toggleSound">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
 
   <div class="status-card" id="statusCard">
     <div class="state-label" id="stateLabel">—</div>
     <div class="lesson-name" id="lessonName">—</div>
     <div class="timer neutral" id="timer">--:--</div>
     <div class="timer-caption" id="timerCaption">&nbsp;</div>
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-pct" id="progressPct">&nbsp;</div>
+    </div>
     <div class="next-info" id="nextInfo">&nbsp;</div>
   </div>
 
+  <div class="view-toggle">
+    <button type="button" id="viewToggleBtn">📅 Тільки сьогодні</button>
+  </div>
+
+  <div id="todayView" class="card"></div>
+
   <div class="card">
+    <div class="table-scroll">
     <table id="schedule">
       <tr>
         <th>№</th>
@@ -279,32 +607,268 @@
         <td class="empty">—</td>
       </tr>
     </table>
+    </div>
   </div>
 
   <div class="legend">
     <div class="legend-item"><span class="legend-swatch current-row"></span>Зелений рядок — поточний урок</div>
     <div class="legend-item"><span class="legend-swatch current-cell"></span>Яскрава клітинка з рамкою — поточний урок сьогодні</div>
     <div class="legend-item"><span class="legend-swatch break-row"></span>Жовтий рядок — перерва / наступний урок</div>
+    <div class="legend-item">📝 — клікни на предмет, щоб додати нотатку/домашнє завдання</div>
+  </div>
+
+  <div class="install-card" id="installCard">
+    <h3>📲 Встановити як застосунок</h3>
+    <p class="install-lead">Встанови сторінку на головний екран телефону — відкриватиметься як звичайний застосунок, працює офлайн і сама оновлюється, коли з'являються зміни в розкладі.</p>
+
+    <div id="installedNotice" class="install-status" hidden>✅ Застосунок уже встановлено на цьому пристрої.</div>
+
+    <button type="button" id="installBtn" class="install-btn">⬇️ Встановити застосунок</button>
+
+    <div id="installInstructions">
+      <details id="androidInstr">
+        <summary>Android (Chrome) — інструкція вручну</summary>
+        <ol>
+          <li>Відкрий меню <b>⋮</b> у верхньому правому куті Chrome</li>
+          <li>Обери <b>«Додати на головний екран»</b> або <b>«Встановити застосунок»</b></li>
+          <li>Підтверди — іконка з'явиться на робочому столі</li>
+        </ol>
+      </details>
+      <details id="iosInstr">
+        <summary>iPhone / iPad (Safari) — інструкція</summary>
+        <ol>
+          <li>Відкрий цю сторінку саме в <b>Safari</b> (не в Chrome — на iOS це не спрацює в інших браузерах)</li>
+          <li>Натисни кнопку <b>«Поділитися»</b> (квадрат зі стрілкою вгору) внизу екрана</li>
+          <li>Обери <b>«На екран «Домівка»»</b> (Add to Home Screen)</li>
+          <li>Натисни <b>«Додати»</b> у правому верхньому куті — готово</li>
+        </ol>
+      </details>
+    </div>
   </div>
 
   <div class="footer">Розклад складений: 30.8.2026 · час визначається за годинником пристрою</div>
 </div>
 
 <script>
+/* ==================== НАЛАШТУВАННЯ КАНІКУЛ/СВЯТ ====================
+   Додай сюди діапазони дат — у ці дні сторінка покаже "Канікули"/"Свято"
+   замість розкладу уроків. Формат дати: 'РРРР-ММ-ДД'.
+   Один день — start і end однакові.                                    */
+const HOLIDAYS = [
+  // орієнтовні дати, уточнити пізніше за наказом ліцею
+  { start:'2026-10-26', end:'2026-11-01', name:'Осінні канікули' },
+  { start:'2026-12-24', end:'2027-01-10', name:'Зимові канікули' },
+  { start:'2027-03-22', end:'2027-03-28', name:'Весняні канікули' },
+  { start:'2027-07-01', end:'2027-08-31', name:'Літні канікули' },
+];
+
+function todayISO(d){
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function findHoliday(d){
+  const iso = todayISO(d);
+  return HOLIDAYS.find(h => iso >= h.start && iso <= h.end) || null;
+}
+
+/* ==================== КОЛЬОРИ ПРЕДМЕТІВ ==================== */
+const SUBJECT_COLORS = {
+  "Здоров'я, безпека, добробут": '#0891b2',
+  'Фізика': '#7c3aed',
+  'Географія': '#059669',
+  'Українська література': '#dc2626',
+  'Фізична культура': '#ea580c',
+  'Геометрія': '#2563eb',
+  "Англійська мова": '#db2777',
+  'Алгебра': '#4f46e5',
+  'Українська мова': '#b91c1c',
+  'Хімія': '#0d9488',
+  'Біологія': '#65a30d',
+  'Зарубіжна література': '#c026d3',
+  'Історія': '#a16207',
+  'Трудове навчання': '#78716c',
+  'Мистецтво': '#e11d48',
+  'Інформатика': '#0284c7',
+};
+const FALLBACK_PALETTE = ['#0891b2','#7c3aed','#059669','#dc2626','#ea580c','#2563eb','#db2777','#4f46e5'];
+function colorForSubject(name){
+  if(SUBJECT_COLORS[name]) return SUBJECT_COLORS[name];
+  let h = 0;
+  for(let i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) >>> 0;
+  return FALLBACK_PALETTE[h % FALLBACK_PALETTE.length];
+}
+
+/* ==================== НАЛАШТУВАННЯ КОРИСТУВАЧА ==================== */
+const DEFAULT_SETTINGS = { theme:'auto', subjectColors:false, progressBar:false, sound:true };
+let settings = Object.assign({}, DEFAULT_SETTINGS, loadSettings());
+
+function loadSettings(){
+  try{ return JSON.parse(localStorage.getItem('rozkladSettings')) || {}; }
+  catch(e){ return {}; }
+}
+function saveSettings(){
+  try{ localStorage.setItem('rozkladSettings', JSON.stringify(settings)); }
+  catch(e){}
+}
+function applyTheme(){
+  if(settings.theme === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', settings.theme);
+  document.querySelectorAll('#themeButtons button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.themeValue === settings.theme);
+  });
+}
+function applySubjectColorsToggle(){
+  document.getElementById('schedule').classList.toggle('subject-colors-on', settings.subjectColors);
+}
+
+document.getElementById('gearBtn').addEventListener('click', ()=>{
+  const p = document.getElementById('settingsPanel');
+  p.hidden = !p.hidden;
+});
+document.getElementById('themeButtons').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-theme-value]');
+  if(!btn) return;
+  settings.theme = btn.dataset.themeValue;
+  saveSettings();
+  applyTheme();
+});
+document.getElementById('toggleColors').addEventListener('change', (e)=>{
+  settings.subjectColors = e.target.checked;
+  saveSettings();
+  applySubjectColorsToggle();
+});
+document.getElementById('toggleProgress').addEventListener('change', (e)=>{
+  settings.progressBar = e.target.checked;
+  saveSettings();
+});
+document.getElementById('toggleSound').addEventListener('change', (e)=>{
+  settings.sound = e.target.checked;
+  saveSettings();
+  if(e.target.checked) unlockAudio(); // розблокувати AudioContext по жесту користувача
+});
+
+document.getElementById('toggleColors').checked = settings.subjectColors;
+document.getElementById('toggleProgress').checked = settings.progressBar;
+document.getElementById('toggleSound').checked = settings.sound;
+applyTheme();
+
+/* ==================== ЗВУК + ВІБРО ==================== */
+let audioCtx = null;
+function unlockAudio(){
+  try{ audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+}
+function playBeep(){
+  if(!settings.sound) return;
+  try{
+    unlockAudio();
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.4);
+  }catch(e){}
+  if(navigator.vibrate) navigator.vibrate([200,80,200]);
+}
+
+/* ==================== НОТАТКИ (localStorage) ==================== */
+function noteKey(day, rowIndex){ return 'note_d'+day+'_r'+rowIndex; }
+function getNote(day, rowIndex){
+  try{ return localStorage.getItem(noteKey(day, rowIndex)) || ''; }catch(e){ return ''; }
+}
+function setNote(day, rowIndex, text){
+  try{
+    if(text) localStorage.setItem(noteKey(day, rowIndex), text);
+    else localStorage.removeItem(noteKey(day, rowIndex));
+  }catch(e){}
+}
+const DAY_NAMES = {1:'Понеділок',2:'Вівторок',3:'Середа',4:'Четвер',5:"П'ятниця"};
+
+function setupSubjectCellsOnce(){
+  const rows = Array.from(document.querySelectorAll('#schedule tr[data-start]'));
+  rows.forEach((tr, rowIndex) => {
+    for(let day=1; day<=5; day++){
+      const cell = tr.children[day+1];
+      if(!cell || cell.classList.contains('empty')) continue;
+      const subject = cell.textContent.trim();
+      cell.style.setProperty('--subj', colorForSubject(subject));
+      cell.classList.add('subject-tinted','subject-cell');
+      if(getNote(day, rowIndex)) cell.classList.add('has-note');
+      cell.addEventListener('click', () => {
+        const existing = getNote(day, rowIndex);
+        const text = window.prompt('Нотатка / домашнє завдання\n'+subject+' ('+DAY_NAMES[day]+')', existing);
+        if(text === null) return; // скасовано
+        setNote(day, rowIndex, text.trim());
+        cell.classList.toggle('has-note', !!text.trim());
+      });
+    }
+  });
+}
+
+/* ==================== ВИГЛЯД "ТІЛЬКИ СЬОГОДНІ" ==================== */
+function loadViewMode(){
+  try{ return localStorage.getItem('viewMode'); }catch(e){ return null; }
+}
+function saveViewMode(v){
+  try{ localStorage.setItem('viewMode', v); }catch(e){}
+}
+const wrapEl = document.getElementById('wrap');
+let viewMode = loadViewMode();
+if(!viewMode) viewMode = 'today';
+wrapEl.dataset.view = viewMode;
+updateViewToggleLabel();
+
+document.getElementById('viewToggleBtn').addEventListener('click', () => {
+  viewMode = (wrapEl.dataset.view === 'today') ? 'week' : 'today';
+  wrapEl.dataset.view = viewMode;
+  saveViewMode(viewMode);
+  updateViewToggleLabel();
+});
+function updateViewToggleLabel(){
+  document.getElementById('viewToggleBtn').textContent =
+    (wrapEl.dataset.view === 'today') ? '🗓️ Весь тиждень' : '📅 Тільки сьогодні';
+}
+
+function renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes){
+  const container = document.getElementById('todayView');
+  if(jsDay < 1 || jsDay > 5){
+    container.innerHTML = '<div class="today-empty">Сьогодні вихідний — уроків немає</div>';
+    return;
+  }
+  let html = '';
+  rows.forEach((tr, i) => {
+    const cell = tr.children[jsDay+1];
+    const subject = cell ? cell.textContent.trim() : '—';
+    if(subject === '—') return;
+    let cls = 'today-row';
+    if(i === matchedIdx) cls += ' current';
+    else if(i === nextIdx) cls += ' next';
+    else if(typeof nowMinutes === 'number' && toMinutes(tr.dataset.end) <= nowMinutes) cls += ' past';
+    html += '<div class="'+cls+'">'
+      + '<div class="today-num">'+(i+1)+'</div>'
+      + '<div class="today-time">'+tr.dataset.start.replace(':','.')+'–'+tr.dataset.end.replace(':','.')+'</div>'
+      + '<div class="today-subject">'+subject+'</div>'
+      + '</div>';
+  });
+  container.innerHTML = html || '<div class="today-empty">Уроків немає</div>';
+}
+
+/* ==================== ЧАС ==================== */
 function toMinutes(hhmm){
   const [h,m] = hhmm.split(':').map(Number);
   return h*60+m;
-}
-function fmt(mins){
-  const h = Math.floor(mins/60);
-  const m = mins%60;
-  return (h>0 ? h+' год ' : '') + m + ' хв';
 }
 function fmtClock(totalSeconds){
   const m = Math.floor(totalSeconds/60);
   const s = totalSeconds%60;
   return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
 }
+
+let lastPhaseKey = null;
 
 function update(){
   const now = new Date();
@@ -318,7 +882,7 @@ function update(){
   headers.forEach(th => th.classList.remove('current-day'));
   rows.forEach(tr => {
     tr.classList.remove('current-row','break-row');
-    tr.querySelectorAll('td').forEach(td => td.classList.remove('current-cell','next-cell'));
+    tr.querySelectorAll('td').forEach(td => td.classList.remove('current-cell','next-cell','past-cell'));
   });
 
   const card = document.getElementById('statusCard');
@@ -327,8 +891,11 @@ function update(){
   const timer = document.getElementById('timer');
   const timerCaption = document.getElementById('timerCaption');
   const nextInfo = document.getElementById('nextInfo');
+  const progressFill = document.getElementById('progressFill');
+  const progressPct = document.getElementById('progressPct');
+  const themeColorMeta = document.getElementById('themeColorMeta');
 
-  card.className = 'status-card';
+  card.className = 'status-card' + (settings.progressBar ? ' progress-mode' : '');
   timer.className = 'timer';
 
   function lessonAt(rowIndex, dayIndex){
@@ -336,16 +903,43 @@ function update(){
     const cell = rows[rowIndex].children[dayIndex+1];
     return cell ? cell.textContent.trim() : null;
   }
+  function setProgress(startMin, endMin){
+    const total = (endMin - startMin) * 60;
+    const elapsed = nowSeconds - startMin*60;
+    const pct = Math.max(0, Math.min(100, (elapsed/total)*100));
+    progressFill.style.width = pct.toFixed(1)+'%';
+    progressPct.textContent = Math.round(pct)+'%';
+  }
+
+  // ---- канікули / свято ----
+  const holiday = findHoliday(now);
+  if(holiday){
+    card.classList.add('holiday');
+    stateLabel.className = 'state-label holiday';
+    stateLabel.textContent = 'Канікули / свято';
+    lessonName.textContent = holiday.name;
+    timer.classList.add('neutral');
+    timer.textContent = '—';
+    timerCaption.innerHTML = '&nbsp;';
+    nextInfo.innerHTML = 'Уроків немає до ' + holiday.end;
+    themeColorMeta.setAttribute('content', '#4338ca');
+    renderTodayView(-1, rows, -1, -1);
+    lastPhaseKey = 'holiday';
+    return;
+  }
 
   if(jsDay < 1 || jsDay > 5){
     card.classList.add('weekend');
     stateLabel.className = 'state-label weekend';
     stateLabel.textContent = 'Вихідний';
-    lessonName.textContent = 'Уроків немає';
+    lessonName.textContent = 'Сьогодні вихідний';
     timer.classList.add('neutral');
     timer.textContent = '—';
     timerCaption.innerHTML = '&nbsp;';
     nextInfo.innerHTML = 'Наступний навчальний день — понеділок';
+    themeColorMeta.setAttribute('content', '#64748b');
+    renderTodayView(jsDay, rows, -1, -1);
+    lastPhaseKey = 'weekend';
     return;
   }
 
@@ -358,27 +952,35 @@ function update(){
     const end = toMinutes(tr.dataset.end);
     if(nowMinutes >= start && nowMinutes < end) matchedIdx = i;
     if(nowMinutes < start && nextIdx === -1) nextIdx = i;
+    // урок сьогоднішнього дня, який уже закінчився — приглушити в таблиці
+    const todayCell = tr.children[jsDay+1];
+    if(end <= nowMinutes && todayCell) todayCell.classList.add('past-cell');
   });
 
+  let phaseKey;
+
   if(matchedIdx !== -1){
-    // идёт урок
+    // йде урок
     const tr = rows[matchedIdx];
     tr.classList.add('current-row');
     const dayCell = tr.children[jsDay+1];
     dayCell && dayCell.classList.add('current-cell');
 
-    const endSeconds = toMinutes(tr.dataset.end)*60;
+    const startMin = toMinutes(tr.dataset.start);
+    const endMin = toMinutes(tr.dataset.end);
+    const endSeconds = endMin*60;
     const remaining = endSeconds - nowSeconds;
 
     card.classList.add('lesson');
     stateLabel.className = 'state-label lesson';
-    stateLabel.textContent = 'Триває урок';
+    stateLabel.textContent = 'Зараз йде урок';
     lessonName.textContent = dayCell ? dayCell.textContent.trim() : '—';
     timer.classList.add('lesson');
     timer.textContent = fmtClock(remaining);
     timerCaption.textContent = 'до кінця уроку';
+    setProgress(startMin, endMin);
+    themeColorMeta.setAttribute('content', '#16a34a');
 
-    // что дальше — перерыв или следующий урок
     const nextTr = rows[matchedIdx+1];
     if(nextTr){
       const gapMin = toMinutes(nextTr.dataset.start) - toMinutes(tr.dataset.end);
@@ -390,11 +992,13 @@ function update(){
     } else {
       nextInfo.innerHTML = 'Це останній урок на сьогодні';
     }
+    phaseKey = 'lesson-'+jsDay+'-'+matchedIdx;
 
   } else if(nextIdx !== -1){
-    // перерыв или ещё не начались уроки
+    // перерва або уроки ще не почались
     const tr = rows[nextIdx];
-    const startSeconds = toMinutes(tr.dataset.start)*60;
+    const startMin = toMinutes(tr.dataset.start);
+    const startSeconds = startMin*60;
     const remaining = startSeconds - nowSeconds;
     const dayCell = tr.children[jsDay+1];
     const nextName = dayCell ? dayCell.textContent.trim() : '—';
@@ -402,19 +1006,24 @@ function update(){
     tr.classList.add('break-row');
     dayCell && dayCell.classList.add('next-cell');
 
-    const isBeforeFirst = nextIdx === 0 && (toMinutes('08:30') - nowMinutes) === (toMinutes(tr.dataset.start) - nowMinutes) && nowMinutes < toMinutes(rows[0].dataset.start) && matchedIdx === -1 && nextIdx === 0 && nowMinutes < toMinutes('08:30');
+    const isBeforeFirst = nextIdx === 0;
+    const prevEnd = nextIdx > 0 ? toMinutes(rows[nextIdx-1].dataset.end) : null;
 
     card.classList.add('break');
     stateLabel.className = 'state-label break';
-    stateLabel.textContent = nextIdx === 0 ? 'До початку занять' : 'Перерва';
+    stateLabel.textContent = isBeforeFirst ? 'До початку занять' : 'Перерва. Наступний урок:';
     lessonName.textContent = (nextName && nextName !== '—') ? nextName : 'наступний урок';
     timer.classList.add('break');
     timer.textContent = fmtClock(remaining);
-    timerCaption.textContent = nextIdx === 0 ? 'до 1-го уроку' : 'до наступного уроку';
+    timerCaption.textContent = isBeforeFirst ? 'до 1-го уроку' : 'до наступного уроку';
+    if(!isBeforeFirst) setProgress(prevEnd, startMin);
+    else progressFill.style.width = '0%', progressPct.textContent = '';
     nextInfo.innerHTML = 'Далі: <b>' + ((nextName && nextName !== '—') ? nextName : '—') + '</b> о ' + tr.dataset.start;
+    themeColorMeta.setAttribute('content', '#d97706');
+    phaseKey = 'break-'+jsDay+'-'+nextIdx;
 
   } else {
-    // уроки закончились
+    // уроки закінчились
     card.classList.add('done');
     stateLabel.className = 'state-label done';
     stateLabel.textContent = 'Уроки завершено';
@@ -423,11 +1032,92 @@ function update(){
     timer.textContent = '—';
     timerCaption.innerHTML = '&nbsp;';
     nextInfo.innerHTML = 'Наступний навчальний день — ' + (jsDay === 5 ? 'понеділок' : 'завтра');
+    themeColorMeta.setAttribute('content', '#64748b');
+    phaseKey = 'done-'+jsDay;
   }
+
+  if(lastPhaseKey !== null && phaseKey !== lastPhaseKey &&
+     (phaseKey.startsWith('lesson-') || phaseKey.startsWith('break-'))){
+    playBeep();
+  }
+  lastPhaseKey = phaseKey;
+
+  renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes);
 }
 
+setupSubjectCellsOnce();
+applySubjectColorsToggle();
 update();
 setInterval(update, 1000);
+
+/* ==================== ВСТАНОВЛЕННЯ ЯК ЗАСТОСУНОК ==================== */
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+const installBtn = document.getElementById('installBtn');
+const installedNotice = document.getElementById('installedNotice');
+const androidInstr = document.getElementById('androidInstr');
+const iosInstr = document.getElementById('iosInstr');
+let deferredInstallPrompt = null;
+
+if(isStandalone){
+  installedNotice.hidden = false;
+  installBtn.hidden = true;
+  document.getElementById('installInstructions').hidden = true;
+}
+// обидві інструкції (Android і iOS) лишаються видимими завжди —
+// кожен сам розгортає ту, що стосується його пристрою, або кнопка
+// нижче розгорне потрібну автоматично.
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+});
+
+// Одна універсальна кнопка для всіх пристроїв:
+// - якщо браузер підтримує нативний діалог встановлення (Android/десктоп Chrome,
+//   Edge) — відкриває саме його;
+// - якщо ні (iOS Safari нативного діалогу взагалі не дає — обмеження Apple,
+//   обійти його програмно неможливо) — розгортає й прокручує до потрібної
+//   покрокової інструкції (iOS або Android/інший браузер).
+installBtn.addEventListener('click', async () => {
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    return;
+  }
+  const target = isIOS ? iosInstr : androidInstr;
+  target.open = true;
+  target.scrollIntoView({ behavior:'smooth', block:'center' });
+});
+
+window.addEventListener('appinstalled', () => {
+  installBtn.hidden = true;
+  installedNotice.hidden = false;
+  document.getElementById('installInstructions').hidden = true;
+});
+
+/* ==================== SERVICE WORKER + АВТООНОВЛЕННЯ ==================== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      // періодично питаємо браузер перевірити, чи sw.js на сервері змінився
+      setInterval(() => reg.update().catch(()=>{}), 5 * 60 * 1000);
+      document.addEventListener('visibilitychange', () => {
+        if(document.visibilityState === 'visible') reg.update().catch(()=>{});
+      });
+    }).catch(()=>{});
+  });
+
+  // щойно новий service worker (нова версія) перейняв контроль — оновлюємо сторінку,
+  // щоб застосунок сам підхопив свіжий розклад без ручного видалення/перевстановлення
+  let swRefreshed = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(swRefreshed) return;
+    swRefreshed = true;
+    window.location.reload();
+  });
+}
 </script>
 </body>
 </html>
