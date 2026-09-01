@@ -415,6 +415,7 @@
     margin-bottom:14px;
   }
   .install-btn:hover{filter:brightness(1.08);}
+  .install-btn[hidden]{display:none;} /* без цього display:block вище перебиває стандартний [hidden] */
   #installInstructions details{
     border:1px solid var(--panel-border);
     border-radius:10px;
@@ -623,7 +624,7 @@
 
     <div id="installedNotice" class="install-status" hidden>✅ Застосунок уже встановлено на цьому пристрої.</div>
 
-    <button type="button" id="installBtn" class="install-btn">⬇️ Встановити застосунок</button>
+    <button type="button" id="installBtn" class="install-btn" hidden>⬇️ Встановити застосунок</button>
 
     <div id="installInstructions">
       <details id="androidInstr">
@@ -1052,11 +1053,11 @@ setInterval(update, 1000);
 
 /* ==================== ВСТАНОВЛЕННЯ ЯК ЗАСТОСУНОК ==================== */
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+// сторінка про встановлення на ЕКРАН ТЕЛЕФОНУ — тому кнопку ховаємо на десктопі,
+// навіть якщо десктопний браузер технічно теж вміє інсталювати PWA (Edge/Chrome).
+const isMobileDevice = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
 const installBtn = document.getElementById('installBtn');
 const installedNotice = document.getElementById('installedNotice');
-const androidInstr = document.getElementById('androidInstr');
-const iosInstr = document.getElementById('iosInstr');
 let deferredInstallPrompt = null;
 
 if(isStandalone){
@@ -1064,31 +1065,27 @@ if(isStandalone){
   installBtn.hidden = true;
   document.getElementById('installInstructions').hidden = true;
 }
-// обидві інструкції (Android і iOS) лишаються видимими завжди —
-// кожен сам розгортає ту, що стосується його пристрою, або кнопка
-// нижче розгорне потрібну автоматично.
-
+// Обидві інструкції (Android і iOS) лишаються видимими завжди — на них можна
+// орієнтуватись вручну незалежно від кнопки.
+//
+// Кнопку "Встановити застосунок" показуємо тільки на мобільному й тільки там,
+// де вона реально відкриє нативний діалог встановлення (браузер підтримує
+// beforeinstallprompt — Android Chrome і подібні). На iOS Safari такого API
+// взагалі немає (обмеження Apple, обійти програмно неможливо), а на десктопі
+// (навіть якщо Edge/Chrome технічно підтримують) кнопка не в тему — там немає
+// "головного екрана телефону". У обох випадках лишається текстова інструкція.
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
+  if(!isStandalone && isMobileDevice) installBtn.hidden = false;
 });
 
-// Одна універсальна кнопка для всіх пристроїв:
-// - якщо браузер підтримує нативний діалог встановлення (Android/десктоп Chrome,
-//   Edge) — відкриває саме його;
-// - якщо ні (iOS Safari нативного діалогу взагалі не дає — обмеження Apple,
-//   обійти його програмно неможливо) — розгортає й прокручує до потрібної
-//   покрокової інструкції (iOS або Android/інший браузер).
 installBtn.addEventListener('click', async () => {
-  if(deferredInstallPrompt){
-    deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    return;
-  }
-  const target = isIOS ? iosInstr : androidInstr;
-  target.open = true;
-  target.scrollIntoView({ behavior:'smooth', block:'center' });
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installBtn.hidden = true;
 });
 
 window.addEventListener('appinstalled', () => {
