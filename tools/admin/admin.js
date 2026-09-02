@@ -402,6 +402,8 @@ function cleanForExport(sched){
   if((sched.holidays || []).length){
     out.holidays = sched.holidays.map(h => ({ start:h.start, end:h.end, name:String(h.name || '').trim() }));
   }
+  const rooms = sched.subjectRooms || {};
+  if(Object.keys(rooms).length) out.subjectRooms = rooms;
   const colors = sched.subjectColors || {};
   if(Object.keys(colors).length) out.subjectColors = colors;
   return out;
@@ -571,6 +573,24 @@ function renderEditor(){
 
   // ---- кольори ----
   const subjects = subjectsOf(s);
+
+  // ---- кабінети ----
+  html += '<h3>Кабінети</h3>';
+  if(!subjects.length){
+    html += '<p class="field"><span class="hint">Заповни сітку — тут з\'являться предмети.</span></p>';
+  } else {
+    const rooms = s.subjectRooms || {};
+    const filled = subjects.filter(n => String(rooms[n] || '').trim()).length;
+    html += '<div class="room-list">' + subjects.map(name =>
+      '<label class="room-chip"><span>' + esc(name) + '</span>'
+      + '<input type="text" inputmode="numeric" maxlength="12" placeholder="—" '
+      + 'data-room="' + esc(name) + '" value="' + esc(rooms[name] || '') + '"></label>'
+    ).join('') + '</div>'
+    + '<p class="field"><span class="hint">Номер показується дрібним під предметом у таблиці й чипом праворуч '
+    + 'у вигляді «тільки сьогодні». Порожнє поле — нічого не малюється. '
+    + 'Заповнено: ' + filled + ' з ' + subjects.length + '.</span></p>';
+  }
+
   html += '<h3>Кольори предметів</h3>';
   if(!subjects.length){
     html += '<p class="field"><span class="hint">Заповни сітку — тут з\'являться предмети.</span></p>';
@@ -658,6 +678,15 @@ $('#editor').addEventListener('input', (e) => {
   else if(d.color     !== undefined) {
     s.subjectColors = s.subjectColors || {};
     s.subjectColors[d.color] = t.value;
+  }
+  else if(d.room      !== undefined) {
+    const v = t.value.trim();
+    s.subjectRooms = s.subjectRooms || {};
+    if(v) s.subjectRooms[d.room] = v;
+    else {
+      delete s.subjectRooms[d.room];
+      if(!Object.keys(s.subjectRooms).length) delete s.subjectRooms;
+    }
   }
   else return;
 

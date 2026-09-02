@@ -262,3 +262,27 @@ table.grid .col-head .row{display:flex;gap:4px;align-items:center;}
 .howto h3{margin:0 0 8px;font-size:13px;color:var(--text);}
 .howto ol{margin:0;padding-left:18px;line-height:1.7;}
 code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:.92em;}
+
+/* ---------- кабінети ---------- */
+.room-list{display:flex;flex-wrap:wrap;gap:8px;}
+.room-chip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:4px 6px 4px 10px;
+  font-size:12px;
+  background:#fff;
+}
+.room-chip input{
+  width:58px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:3px 6px;
+  font-family:inherit;
+  font-size:12px;
+  text-align:center;
+  color:var(--text);
+  background:#fff;
+}

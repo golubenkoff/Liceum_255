@@ -2,7 +2,7 @@
 // Версію CACHE_NAME підняти при зміні складу ASSETS (іконки, manifest, набір
 // розкладів). index.html і schedules/*.json і так тягнуться network-first,
 // тому заради правки розкладу версію бампати не треба.
-const CACHE_NAME = 'rozklad-7b-v20260902-schedules';
+const CACHE_NAME = 'rozklad-7b-v20260902-rooms';
 const ASSETS = [
   './',
   './index.html',

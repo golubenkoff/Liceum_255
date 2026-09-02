@@ -312,6 +312,19 @@
   }
   .today-time{color:#64748b;font-size:12px;width:90px;flex-shrink:0;}
   .today-subject{flex:1;}
+  /* тут місця вистачає, тому кабінет — окремим чипом праворуч */
+  .today-room{
+    flex-shrink:0;
+    font-size:11px;
+    font-weight:600;
+    color:#64748b;
+    background:#eef2f7;
+    border-radius:999px;
+    padding:3px 9px;
+    font-variant-numeric:tabular-nums;
+  }
+  .today-row.current .today-room,
+  .today-row.next .today-room{background:rgba(255,255,255,0.65);color:#334155;}
   .today-empty{padding:20px;text-align:center;color:#94a3b8;font-size:14px;}
 
   /* ---------- таблица ---------- */
@@ -352,6 +365,39 @@
     width:85px;
   }
   .empty{text-align:center;color:#cbd5e1;}
+
+  /* Номер кабінету — округлий міні-бейдж біля правого краю комірки.
+     ВАЖЛИВО: flex вішаємо на внутрішній .lesson-cell, а не на сам <td>.
+     display:flex на комірці скасовує display:table-cell — рядок перестає бути
+     рядком таблиці й усе злипається в першу колонку (у Safari ще й по-своєму).
+     Тому <td> лишається коміркою, а розкладкою всередині керує обгортка. */
+  #schedule .lesson-cell{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  /* min-width НЕ чіпаємо: за замовчуванням flex-item не стискається вужче за
+     min-content, тож колонка розсунеться під найдовше слово, а не порве його
+     навпіл ("Географі/я"). Ширину таблиці все одно тримає min-width:600px
+     і горизонтальна прокрутка .table-scroll. */
+  .room{
+    flex-shrink:0;
+    font-size:10px;
+    line-height:1;
+    padding:3px 7px;
+    border-radius:999px;
+    background:#eef2f7;
+    color:#64748b;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  td.current-cell .room,
+  td.next-cell .room{background:rgba(255,255,255,0.8);color:#334155;}
+  table.subject-colors-on td.subject-tinted .room{
+    background:color-mix(in srgb, var(--subj) 22%, white);
+    color:#334155;
+  }
 
   tr.current-row{background:#dcfce7;}
   tr.current-row td:first-child,
@@ -651,6 +697,18 @@ const PALETTE_KEY_PREFIX = 'schedPalette_v1_';
 const GOLDEN_ANGLE = 137.508;
 
 let activeColors = {}; // ефективна мапа "предмет → колір" для поточного розкладу
+let activeRooms  = {}; // "предмет → номер кабінету" з schedule.subjectRooms
+
+function roomFor(subject){
+  const r = activeRooms[subject];
+  return (r === undefined || r === null) ? '' : String(r).trim();
+}
+
+// Назву предмета більше не можна брати з textContent комірки: там тепер ще й
+// номер кабінету. Єдине джерело — атрибут data-subject, який ставить рендер.
+function subjectOf(cell){
+  return cell ? (cell.dataset.subject || '') : '';
+}
 
 function hslToHex(h, s, l){
   s /= 100; l /= 100;
@@ -837,7 +895,7 @@ function setupSubjectCells(){
       const day = d.dow;
       const cell = tr.children[dayCols[day]];
       if(!cell || cell.classList.contains('empty')) return;
-      const subject = cell.textContent.trim();
+      const subject = subjectOf(cell);
       cell.style.setProperty('--subj', colorForSubject(subject));
       cell.classList.add('subject-tinted','subject-cell');
       if(getNote(day, rowIndex)) cell.classList.add('has-note');
@@ -886,8 +944,8 @@ function renderTodayView(dow, rows, matchedIdx, nextIdx, nowMinutes){
   let html = '';
   rows.forEach((tr, i) => {
     const cell = tr.children[dayCols[dow]];
-    const subject = cell ? cell.textContent.trim() : '—';
-    if(subject === '—') return;
+    const subject = subjectOf(cell);
+    if(!subject) return;
     let cls = 'today-row subject-cell';
     if(i === matchedIdx) cls += ' current';
     else if(i === nextIdx) cls += ' next';
@@ -898,10 +956,12 @@ function renderTodayView(dow, rows, matchedIdx, nextIdx, nowMinutes){
       cls += ' subject-tinted';
       styleAttr = ' style="--subj:'+colorForSubject(subject)+'"';
     }
-    html += '<div class="'+cls+'"'+styleAttr+' data-row="'+i+'">'
+    const room = roomFor(subject);
+    html += '<div class="'+cls+'"'+styleAttr+' data-row="'+i+'" data-subject="'+esc(subject)+'">'
       + '<div class="today-num">'+(i+1)+'</div>'
       + '<div class="today-time">'+tr.dataset.start.replace(':','.')+'–'+tr.dataset.end.replace(':','.')+'</div>'
       + '<div class="today-subject">'+esc(subject)+'</div>'
+      + (room ? '<div class="today-room" title="Кабінет '+esc(room)+'">'+esc(room)+'</div>' : '')
       + '</div>';
   });
   container.innerHTML = html || '<div class="today-empty">Уроків немає</div>';
@@ -914,7 +974,7 @@ document.getElementById('todayView').addEventListener('click', (e) => {
   if(!row) return;
   const day = Number(row.closest('#todayView').dataset.day);
   const rowIndex = Number(row.dataset.row);
-  const subject = row.querySelector('.today-subject').textContent.trim();
+  const subject = row.dataset.subject || '';
   editNoteFor(day, rowIndex, subject, (hasNote) => row.classList.toggle('has-note', hasNote));
 });
 
@@ -962,8 +1022,7 @@ function update(){
 
   function lessonAt(rowIndex, dayIndex){
     if(rowIndex < 0 || rowIndex >= rows.length) return null;
-    const cell = rows[rowIndex].children[dayCols[dayIndex]];
-    return cell ? cell.textContent.trim() : null;
+    return subjectOf(rows[rowIndex].children[dayCols[dayIndex]]);
   }
   function setProgress(startMin, endMin){
     const total = (endMin - startMin) * 60;
@@ -1038,7 +1097,7 @@ function update(){
     if(settings.progressBar) card.classList.add('progress-mode');
     stateLabel.className = 'state-label lesson';
     stateLabel.textContent = 'Зараз йде урок';
-    lessonName.textContent = dayCell ? dayCell.textContent.trim() : '—';
+    lessonName.textContent = subjectOf(dayCell) || '—';
     timer.classList.add('lesson');
     timer.textContent = fmtClock(remaining);
     timerCaption.textContent = 'до кінця уроку';
@@ -1052,7 +1111,7 @@ function update(){
       nextTr.classList.add('break-row');
       const nextCell = nextTr.children[dayCols[dow]];
       nextCell && nextCell.classList.add('next-cell');
-      nextInfo.innerHTML = 'Далі: перерва ' + gapMin + ' хв' + (nextName && nextName !== '—' ? ', потім <b>' + esc(nextName) + '</b>' : '');
+      nextInfo.innerHTML = 'Далі: перерва ' + gapMin + ' хв' + (nextName ? ', потім <b>' + esc(nextName) + '</b>' : '');
     } else {
       nextInfo.innerHTML = 'Це останній урок на сьогодні';
     }
@@ -1065,7 +1124,7 @@ function update(){
     const startSeconds = startMin*60;
     const remaining = startSeconds - nowSeconds;
     const dayCell = tr.children[dayCols[dow]];
-    const nextName = dayCell ? dayCell.textContent.trim() : '—';
+    const nextName = subjectOf(dayCell);
 
     tr.classList.add('break-row');
     dayCell && dayCell.classList.add('next-cell');
@@ -1077,7 +1136,7 @@ function update(){
     if(settings.progressBar) card.classList.add('progress-mode');
     stateLabel.className = 'state-label break';
     stateLabel.textContent = isBeforeFirst ? 'До початку занять' : 'Перерва. Наступний урок:';
-    lessonName.textContent = (nextName && nextName !== '—') ? nextName : 'наступний урок';
+    lessonName.textContent = nextName || 'наступний урок';
     timer.classList.add('break');
     timer.textContent = fmtClock(remaining);
     timerCaption.textContent = isBeforeFirst ? 'до 1-го уроку' : 'до наступного уроку';
@@ -1087,7 +1146,7 @@ function update(){
       progressFill.style.width = '0%';
       progressPct.textContent = '';
     }
-    nextInfo.innerHTML = 'Далі: <b>' + ((nextName && nextName !== '—') ? esc(nextName) : '—') + '</b> о ' + esc(tr.dataset.start);
+    nextInfo.innerHTML = 'Далі: <b>' + (nextName ? esc(nextName) : '—') + '</b> о ' + esc(tr.dataset.start);
     themeColorMeta.setAttribute('content', '#d97706');
     phaseKey = 'break-'+dow+'-'+nextIdx;
 
@@ -1196,7 +1255,15 @@ function renderScheduleTable(schedule){
           + '<td class="time">'+esc(bell.start.replace(':','.'))+'–'+esc(bell.end.replace(':','.'))+'</td>';
     days.forEach(d => {
       const subject = String(d.lessons[i] || '').trim();
-      html += subject ? '<td>'+esc(subject)+'</td>' : '<td class="empty">—</td>';
+      if(!subject){ html += '<td class="empty" data-subject="">—</td>'; return; }
+      const room = roomFor(subject);
+      // обгортка .lesson-cell — flex-контейнер (на самому <td> flex ставити не можна,
+      // це ламає таблицю); span навколо назви потрібен, щоб текст був справжнім
+      // flex-item і йому можна було задати min-width:0 проти розпирання колонки
+      html += '<td data-subject="'+esc(subject)+'"><div class="lesson-cell">'
+            + '<span class="subj">'+esc(subject)+'</span>'
+            + (room ? '<span class="room" title="Кабінет '+esc(room)+'">'+esc(room)+'</span>' : '')
+            + '</div></td>';
     });
     html += '</tr>';
   });
@@ -1208,6 +1275,7 @@ function applySchedule(schedule, id){
   currentScheduleId = id;
   HOLIDAYS = Array.isArray(schedule.holidays) ? schedule.holidays : [];
   activeColors = Object.assign({}, buildPalette(schedule, id), schedule.subjectColors || {});
+  activeRooms  = schedule.subjectRooms || {};
 
   document.getElementById('scheduleTitle').textContent = schedule.name || 'Розклад';
   const subEl = document.getElementById('scheduleSubtitle');
@@ -1285,7 +1353,11 @@ function refreshScheduleInBackground(id){
     applySchedule(data, id);
     renderScheduleSelect();
     updateScheduleHint();
-  }).catch(()=>{});
+  }).catch(() => {
+    // Мовчазний провал тут означав би, що людина дивиться на стару збережену
+    // копію розкладу і не має жодного способу про це дізнатись.
+    updateScheduleHint('Не вдалося перевірити оновлення — показано збережену копію', true);
+  });
 }
 
 function selectSchedule(id){
@@ -1313,6 +1385,27 @@ function selectSchedule(id){
     sel.value = currentScheduleId || sel.value;
     updateScheduleHint('Цей розклад ще не збережено на пристрої — потрібен інтернет', true);
   });
+}
+
+// Збережений вибір може вказувати на розклад, якого в каталозі вже немає
+// (перейменували, видалили, або людині колись підсунуло проміжний стан).
+// Без цієї перевірки сторінка вічно показує "привида" з локальної копії:
+// мережеве оновлення для нього дає 404, а гілка "currentSchedule вже є"
+// відпрацьовує раніше й нічого не міняє. Тому — прибрати й узяти дефолтний.
+function dropMissingSelection(){
+  if(!catalog || !Array.isArray(catalog.schedules) || !catalog.schedules.length) return null;
+  const id = currentScheduleId || settings.scheduleId;
+  if(!id || catalogEntry(id)) return null;
+
+  try{ localStorage.removeItem(SCHED_KEY_PREFIX + id); }catch(e){}
+  try{ localStorage.removeItem(PALETTE_KEY_PREFIX + id); }catch(e){}
+  settings.scheduleId = null;
+  saveSettings();
+  currentSchedule = null;
+  currentScheduleId = null;
+  // clockStarted НЕ скидаємо: startClock() тоді повісив би другий setInterval,
+  // а наявний таймер і так підхопить нову таблицю після applySchedule()
+  return defaultScheduleId();
 }
 
 function showScheduleError(){
@@ -1343,8 +1436,9 @@ function bootSchedule(){
 
   // 2) свіжий каталог, далі свіжий розклад
   refreshCatalog().catch(()=>null).then(() => {
+    const dropped = dropMissingSelection();
     // якщо вибору не було й кешу не було — дефолт визначаємо вже за свіжим каталогом
-    const targetId = (urlId || settings.scheduleId) || defaultScheduleId();
+    const targetId = dropped || (urlId || settings.scheduleId) || defaultScheduleId();
     renderScheduleSelect();
 
     if(currentSchedule){
