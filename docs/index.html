@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Розклад 7Б — поточний урок</title>
+<title>Розклад — поточний урок</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -132,6 +132,25 @@
     cursor:pointer;
   }
   .theme-buttons button.active{background:#16a34a;color:#fff;border-color:#16a34a;}
+  .schedule-select{
+    border:1px solid var(--panel-border);
+    background:#fff;
+    color:#1e293b;
+    padding:6px 10px;
+    border-radius:8px;
+    font-size:13px;
+    max-width:60%;
+    cursor:pointer;
+  }
+  .schedule-select:disabled{opacity:.6;cursor:default;}
+  .setting-hint{
+    font-size:12px;
+    opacity:.75;
+    margin:-4px 0 4px;
+    padding-bottom:9px;
+    border-bottom:1px solid var(--panel-border);
+  }
+  .setting-hint.warn{color:#fbbf24;opacity:1;}
   .switch{
     position:relative;
     width:42px;
@@ -479,14 +498,19 @@
 <div class="wrap" id="wrap" data-view="week">
   <div class="top-row">
     <div>
-      <h1>7-Б клас</h1>
-      <p class="sub">Ліцей № 255 · Класний керівник: Лапач М.П.</p>
+      <h1 id="scheduleTitle">Розклад</h1>
+      <p class="sub" id="scheduleSubtitle">Завантаження…</p>
     </div>
     <button type="button" class="gear-btn" id="gearBtn" title="Налаштування" aria-label="Налаштування">⚙</button>
   </div>
 
   <div class="settings-panel" id="settingsPanel" hidden>
     <h3>Налаштування</h3>
+    <div class="setting-row">
+      <span>Розклад</span>
+      <select class="schedule-select" id="scheduleSelect" aria-label="Вибір розкладу"></select>
+    </div>
+    <div class="setting-hint" id="scheduleHint">&nbsp;</div>
     <div class="setting-row">
       <span>Тема</span>
       <div class="theme-buttons" id="themeButtons">
@@ -538,80 +562,8 @@
 
   <div class="card">
     <div class="table-scroll">
-    <table id="schedule">
-      <tr>
-        <th>№</th>
-        <th>Час</th>
-        <th data-day="1">Пон.</th>
-        <th data-day="2">Вівт.</th>
-        <th data-day="3">Сер.</th>
-        <th data-day="4">Чет.</th>
-        <th data-day="5">П'ят.</th>
-      </tr>
-      <tr data-start="08:30" data-end="09:15">
-        <td>1</td>
-        <td class="time">08.30–09.15</td>
-        <td>Здоров'я, безпека, добробут</td>
-        <td>Фізика</td>
-        <td>Географія</td>
-        <td>Українська література</td>
-        <td>Географія</td>
-      </tr>
-      <tr data-start="09:25" data-end="10:10">
-        <td>2</td>
-        <td class="time">09.25–10.10</td>
-        <td>Фізична культура</td>
-        <td>Геометрія</td>
-        <td>Фізика</td>
-        <td>Геометрія</td>
-        <td>Англійська мова</td>
-      </tr>
-      <tr data-start="10:20" data-end="11:05">
-        <td>3</td>
-        <td class="time">10.20–11.05</td>
-        <td>Алгебра</td>
-        <td>Англійська мова</td>
-        <td>Англійська мова</td>
-        <td>Хімія</td>
-        <td>Українська мова</td>
-      </tr>
-      <tr data-start="11:20" data-end="12:05">
-        <td>4</td>
-        <td class="time">11.20–12.05</td>
-        <td>Українська література</td>
-        <td>Українська мова</td>
-        <td>Алгебра</td>
-        <td>Інформатика</td>
-        <td>Хімія</td>
-      </tr>
-      <tr data-start="12:15" data-end="13:00">
-        <td>5</td>
-        <td class="time">12.15–13.00</td>
-        <td>Біологія</td>
-        <td>Зарубіжна література</td>
-        <td>Історія</td>
-        <td>Фізична культура</td>
-        <td>Алгебра</td>
-      </tr>
-      <tr data-start="13:10" data-end="13:55">
-        <td>6</td>
-        <td class="time">13.10–13.55</td>
-        <td>Англійська мова</td>
-        <td>Українська мова</td>
-        <td>Біологія</td>
-        <td>Трудове навчання</td>
-        <td>Мистецтво</td>
-      </tr>
-      <tr data-start="14:00" data-end="14:45">
-        <td>7</td>
-        <td class="time">14.00–14.45</td>
-        <td class="empty">—</td>
-        <td>Інформатика</td>
-        <td>Фізична культура</td>
-        <td>Історія</td>
-        <td class="empty">—</td>
-      </tr>
-    </table>
+    <!-- вміст будується з docs/schedules/<id>.json функцією renderScheduleTable() -->
+    <table id="schedule"></table>
     </div>
   </div>
 
@@ -651,21 +603,27 @@
     </div>
   </div>
 
-  <div class="footer">Розклад складений: 30.8.2026 · час визначається за годинником пристрою</div>
+  <div class="footer" id="scheduleFooter">час визначається за годинником пристрою</div>
 </div>
 
 <script>
-/* ==================== НАЛАШТУВАННЯ КАНІКУЛ/СВЯТ ====================
-   Додай сюди діапазони дат — у ці дні сторінка покаже "Канікули"/"Свято"
-   замість розкладу уроків. Формат дати: 'РРРР-ММ-ДД'.
-   Один день — start і end однакові.                                    */
-const HOLIDAYS = [
-  // орієнтовні дати, уточнити пізніше за наказом ліцею
-  { start:'2026-10-26', end:'2026-11-01', name:'Осінні канікули' },
-  { start:'2026-12-24', end:'2027-01-10', name:'Зимові канікули' },
-  { start:'2027-03-22', end:'2027-03-28', name:'Весняні канікули' },
-  { start:'2027-07-01', end:'2027-08-31', name:'Літні канікули' },
-];
+/* ==================== ПОТОЧНИЙ РОЗКЛАД ====================
+   Дані більше не зашиті в цей файл — вони лежать у docs/schedules/*.json.
+   Каталог schedules/index.json перелічує всі доступні розклади, вибраний
+   розклад кешується в localStorage, щоб застосунок працював офлайн.
+   Канікули/свята тепер теж усередині JSON розкладу (поле holidays).      */
+const SCHEDULES_DIR   = 'schedules/';
+const CATALOG_FILE    = 'index.json';
+const FALLBACK_ID     = 'class7B';   // якщо немає ні кешу, ні каталогу
+const CATALOG_KEY     = 'schedCatalog_v1';
+const SCHED_KEY_PREFIX= 'schedCache_v1_';
+
+let HOLIDAYS = [];            // наповнюється з schedule.holidays
+let currentSchedule = null;   // повний JSON поточного розкладу
+let currentScheduleId = null;
+let scheduleDays = [];        // [{dow, short, full, lessons}]
+let dayCols = {};             // dow -> індекс колонки в <tr> (0=№, 1=час, далі дні)
+let catalog = null;           // { version, schedules:[{id,name,file,isDefault}] }
 
 function todayISO(d){
   const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
@@ -696,15 +654,18 @@ const SUBJECT_COLORS = {
   'Інформатика': '#0284c7',
 };
 const FALLBACK_PALETTE = ['#0891b2','#7c3aed','#059669','#dc2626','#ea580c','#2563eb','#db2777','#4f46e5'];
+// SUBJECT_COLORS вище — спільна база для типових українських предметів;
+// розклад може додати свої / перекрити чужі через поле subjectColors у JSON.
+let activeColors = SUBJECT_COLORS;
 function colorForSubject(name){
-  if(SUBJECT_COLORS[name]) return SUBJECT_COLORS[name];
+  if(activeColors[name]) return activeColors[name];
   let h = 0;
   for(let i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) >>> 0;
   return FALLBACK_PALETTE[h % FALLBACK_PALETTE.length];
 }
 
 /* ==================== НАЛАШТУВАННЯ КОРИСТУВАЧА ==================== */
-const DEFAULT_SETTINGS = { theme:'auto', subjectColors:false, progressBar:false, sound:true };
+const DEFAULT_SETTINGS = { theme:'auto', subjectColors:false, progressBar:false, sound:true, scheduleId:null };
 let settings = Object.assign({}, DEFAULT_SETTINGS, loadSettings());
 
 function loadSettings(){
@@ -790,8 +751,29 @@ function playBeep(){
   if(navigator.vibrate) navigator.vibrate([200,80,200]);
 }
 
-/* ==================== НОТАТКИ (localStorage) ==================== */
-function noteKey(day, rowIndex){ return 'note_d'+day+'_r'+rowIndex; }
+/* ==================== НОТАТКИ (localStorage) ====================
+   Ключ прив'язаний до розкладу: у 7-Б і 8-А свої нотатки, навіть якщо
+   урок стоїть на тій самій позиції.                                  */
+function noteKey(day, rowIndex){ return 'note_'+(currentScheduleId || FALLBACK_ID)+'_d'+day+'_r'+rowIndex; }
+
+// Одноразовий перенос нотаток зі старої схеми ключів (note_d1_r0), яка була
+// до появи кількох розкладів — усі вони належали 7-Б.
+function migrateLegacyNotes(){
+  try{
+    if(localStorage.getItem('notesMigrated_v2')) return;
+    const legacy = [];
+    for(let i=0; i<localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(k && /^note_d\d+_r\d+$/.test(k)) legacy.push(k);
+    }
+    legacy.forEach(k => {
+      const target = 'note_'+FALLBACK_ID+'_'+k.slice('note_'.length);
+      if(localStorage.getItem(target) === null) localStorage.setItem(target, localStorage.getItem(k));
+      localStorage.removeItem(k);
+    });
+    localStorage.setItem('notesMigrated_v2', '1');
+  }catch(e){}
+}
 function getNote(day, rowIndex){
   try{ return localStorage.getItem(noteKey(day, rowIndex)) || ''; }catch(e){ return ''; }
 }
@@ -801,7 +783,8 @@ function setNote(day, rowIndex, text){
     else localStorage.removeItem(noteKey(day, rowIndex));
   }catch(e){}
 }
-const DAY_NAMES = {1:'Понеділок',2:'Вівторок',3:'Середа',4:'Четвер',5:"П'ятниця"};
+// Заповнюється з days[].full поточного розкладу (див. applySchedule()).
+let DAY_NAMES = {};
 
 // Спільний редактор нотатки — використовується і таблицею "весь тиждень",
 // і списком "тільки сьогодні". onSaved(hasNote) оновлює індикатор у виклику.
@@ -813,12 +796,15 @@ function editNoteFor(day, rowIndex, subject, onSaved){
   onSaved(!!text.trim());
 }
 
-function setupSubjectCellsOnce(){
+// Викликається після кожного рендеру таблиці (зміна розкладу теж), бо
+// перемальована таблиця втрачає навішані слухачі.
+function setupSubjectCells(){
   const rows = Array.from(document.querySelectorAll('#schedule tr[data-start]'));
   rows.forEach((tr, rowIndex) => {
-    for(let day=1; day<=5; day++){
-      const cell = tr.children[day+1];
-      if(!cell || cell.classList.contains('empty')) continue;
+    scheduleDays.forEach(d => {
+      const day = d.dow;
+      const cell = tr.children[dayCols[day]];
+      if(!cell || cell.classList.contains('empty')) return;
       const subject = cell.textContent.trim();
       cell.style.setProperty('--subj', colorForSubject(subject));
       cell.classList.add('subject-tinted','subject-cell');
@@ -826,7 +812,7 @@ function setupSubjectCellsOnce(){
       cell.addEventListener('click', () => {
         editNoteFor(day, rowIndex, subject, (hasNote) => cell.classList.toggle('has-note', hasNote));
       });
-    }
+    });
   });
 }
 
@@ -854,27 +840,27 @@ function updateViewToggleLabel(){
     (wrapEl.dataset.view === 'today') ? '🗓️ Весь тиждень' : '📅 Тільки сьогодні';
 }
 
-function renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes){
+function renderTodayView(dow, rows, matchedIdx, nextIdx, nowMinutes){
   const container = document.getElementById('todayView');
-  container.dataset.day = jsDay;
-  if(jsDay === -1){
+  container.dataset.day = dow;
+  if(dow === -1){
     container.innerHTML = '<div class="today-empty">Канікули / свято — уроків немає</div>';
     return;
   }
-  if(jsDay < 1 || jsDay > 5){
+  if(dayCols[dow] === undefined){
     container.innerHTML = '<div class="today-empty">Сьогодні вихідний — уроків немає</div>';
     return;
   }
   let html = '';
   rows.forEach((tr, i) => {
-    const cell = tr.children[jsDay+1];
+    const cell = tr.children[dayCols[dow]];
     const subject = cell ? cell.textContent.trim() : '—';
     if(subject === '—') return;
     let cls = 'today-row subject-cell';
     if(i === matchedIdx) cls += ' current';
     else if(i === nextIdx) cls += ' next';
     else if(typeof nowMinutes === 'number' && toMinutes(tr.dataset.end) <= nowMinutes) cls += ' past';
-    if(getNote(jsDay, i)) cls += ' has-note';
+    if(getNote(dow, i)) cls += ' has-note';
     let styleAttr = '';
     if(settings.subjectColors){
       cls += ' subject-tinted';
@@ -883,7 +869,7 @@ function renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes){
     html += '<div class="'+cls+'"'+styleAttr+' data-row="'+i+'">'
       + '<div class="today-num">'+(i+1)+'</div>'
       + '<div class="today-time">'+tr.dataset.start.replace(':','.')+'–'+tr.dataset.end.replace(':','.')+'</div>'
-      + '<div class="today-subject">'+subject+'</div>'
+      + '<div class="today-subject">'+esc(subject)+'</div>'
       + '</div>';
   });
   container.innerHTML = html || '<div class="today-empty">Уроків немає</div>';
@@ -915,7 +901,8 @@ let lastPhaseKey = null;
 
 function update(){
   const now = new Date();
-  const jsDay = now.getDay(); // 0=вс..6=сб
+  const jsDay = now.getDay();          // 0=нд..6=сб
+  const dow = jsDay === 0 ? 7 : jsDay; // 1=пн..7=нд — нумерація днів як у JSON розкладу
   const nowSeconds = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
   const nowMinutes = Math.floor(nowSeconds/60);
 
@@ -943,7 +930,7 @@ function update(){
 
   function lessonAt(rowIndex, dayIndex){
     if(rowIndex < 0 || rowIndex >= rows.length) return null;
-    const cell = rows[rowIndex].children[dayIndex+1];
+    const cell = rows[rowIndex].children[dayCols[dayIndex]];
     return cell ? cell.textContent.trim() : null;
   }
   function setProgress(startMin, endMin){
@@ -971,7 +958,7 @@ function update(){
     return;
   }
 
-  if(jsDay < 1 || jsDay > 5){
+  if(dayCols[dow] === undefined){
     card.classList.add('weekend');
     stateLabel.className = 'state-label weekend';
     stateLabel.textContent = 'Вихідний';
@@ -979,14 +966,15 @@ function update(){
     timer.classList.add('neutral');
     timer.textContent = '—';
     timerCaption.innerHTML = '&nbsp;';
-    nextInfo.innerHTML = 'Наступний навчальний день — понеділок';
+    nextInfo.innerHTML = 'Наступний навчальний день — ' + nextSchoolDayLabel(dow);
     themeColorMeta.setAttribute('content', '#64748b');
-    renderTodayView(jsDay, rows, -1, -1);
+    renderTodayView(dow, rows, -1, -1);
     lastPhaseKey = 'weekend';
     return;
   }
 
-  headers[jsDay-1] && headers[jsDay-1].classList.add('current-day');
+  const todayHeader = document.querySelector('#schedule th[data-day="'+dow+'"]');
+  todayHeader && todayHeader.classList.add('current-day');
 
   let matchedIdx = -1;
   let nextIdx = -1;
@@ -996,7 +984,7 @@ function update(){
     if(nowMinutes >= start && nowMinutes < end) matchedIdx = i;
     if(nowMinutes < start && nextIdx === -1) nextIdx = i;
     // урок сьогоднішнього дня, який уже закінчився — приглушити в таблиці
-    const todayCell = tr.children[jsDay+1];
+    const todayCell = tr.children[dayCols[dow]];
     if(end <= nowMinutes && todayCell) todayCell.classList.add('past-cell');
   });
 
@@ -1006,7 +994,7 @@ function update(){
     // йде урок
     const tr = rows[matchedIdx];
     tr.classList.add('current-row');
-    const dayCell = tr.children[jsDay+1];
+    const dayCell = tr.children[dayCols[dow]];
     dayCell && dayCell.classList.add('current-cell');
 
     const startMin = toMinutes(tr.dataset.start);
@@ -1028,15 +1016,15 @@ function update(){
     const nextTr = rows[matchedIdx+1];
     if(nextTr){
       const gapMin = toMinutes(nextTr.dataset.start) - toMinutes(tr.dataset.end);
-      const nextName = lessonAt(matchedIdx+1, jsDay);
+      const nextName = lessonAt(matchedIdx+1, dow);
       nextTr.classList.add('break-row');
-      const nextCell = nextTr.children[jsDay+1];
+      const nextCell = nextTr.children[dayCols[dow]];
       nextCell && nextCell.classList.add('next-cell');
-      nextInfo.innerHTML = 'Далі: перерва ' + gapMin + ' хв' + (nextName && nextName !== '—' ? ', потім <b>' + nextName + '</b>' : '');
+      nextInfo.innerHTML = 'Далі: перерва ' + gapMin + ' хв' + (nextName && nextName !== '—' ? ', потім <b>' + esc(nextName) + '</b>' : '');
     } else {
       nextInfo.innerHTML = 'Це останній урок на сьогодні';
     }
-    phaseKey = 'lesson-'+jsDay+'-'+matchedIdx;
+    phaseKey = 'lesson-'+dow+'-'+matchedIdx;
 
   } else if(nextIdx !== -1){
     // перерва або уроки ще не почались
@@ -1044,7 +1032,7 @@ function update(){
     const startMin = toMinutes(tr.dataset.start);
     const startSeconds = startMin*60;
     const remaining = startSeconds - nowSeconds;
-    const dayCell = tr.children[jsDay+1];
+    const dayCell = tr.children[dayCols[dow]];
     const nextName = dayCell ? dayCell.textContent.trim() : '—';
 
     tr.classList.add('break-row');
@@ -1067,9 +1055,9 @@ function update(){
       progressFill.style.width = '0%';
       progressPct.textContent = '';
     }
-    nextInfo.innerHTML = 'Далі: <b>' + ((nextName && nextName !== '—') ? nextName : '—') + '</b> о ' + tr.dataset.start;
+    nextInfo.innerHTML = 'Далі: <b>' + ((nextName && nextName !== '—') ? esc(nextName) : '—') + '</b> о ' + esc(tr.dataset.start);
     themeColorMeta.setAttribute('content', '#d97706');
-    phaseKey = 'break-'+jsDay+'-'+nextIdx;
+    phaseKey = 'break-'+dow+'-'+nextIdx;
 
   } else {
     // уроки закінчились
@@ -1080,9 +1068,9 @@ function update(){
     timer.classList.add('neutral');
     timer.textContent = '—';
     timerCaption.innerHTML = '&nbsp;';
-    nextInfo.innerHTML = 'Наступний навчальний день — ' + (jsDay === 5 ? 'понеділок' : 'завтра');
+    nextInfo.innerHTML = 'Наступний навчальний день — ' + nextSchoolDayLabel(dow);
     themeColorMeta.setAttribute('content', '#64748b');
-    phaseKey = 'done-'+jsDay;
+    phaseKey = 'done-'+dow;
   }
 
   if(lastPhaseKey !== null && phaseKey !== lastPhaseKey &&
@@ -1091,13 +1079,266 @@ function update(){
   }
   lastPhaseKey = phaseKey;
 
-  renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes);
+  renderTodayView(dow, rows, matchedIdx, nextIdx, nowMinutes);
 }
 
-setupSubjectCellsOnce();
-applySubjectColorsToggle();
-update();
-setInterval(update, 1000);
+/* ==================== ЗАВАНТАЖЕННЯ РОЗКЛАДУ ====================
+   Порядок такий, щоб застосунок стартував миттєво й офлайн:
+     1) якщо в localStorage є копія вибраного розкладу — малюємо одразу з неї;
+     2) паралельно тягнемо свіжий каталог і свіжий JSON — і, якщо він змінився,
+        перемальовуємо;
+     3) немає ні копії, ні мережі — показуємо помилку з кнопкою "ще раз".      */
+
+function esc(s){
+  return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function lsGet(key){ try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
+function lsSet(key, value){ try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){} }
+
+function cachedSchedule(id){ const r = lsGet(SCHED_KEY_PREFIX + id); return (r && r.data) || null; }
+function cacheSchedule(id, data){ lsSet(SCHED_KEY_PREFIX + id, { data:data, savedAt:Date.now() }); }
+function cachedCatalog(){ const r = lsGet(CATALOG_KEY); return (r && r.data) || null; }
+function cacheCatalog(data){ lsSet(CATALOG_KEY, { data:data, savedAt:Date.now() }); }
+
+function fetchJSON(path){
+  return fetch(path, { cache:'no-store' }).then(res => {
+    if(!res.ok) throw new Error(path + ' → HTTP ' + res.status);
+    return res.json();
+  });
+}
+
+function isValidSchedule(s){
+  const time = /^\d{1,2}:\d{2}$/;
+  return !!(s && typeof s.id === 'string'
+    && Array.isArray(s.bells) && s.bells.length
+    && Array.isArray(s.days)  && s.days.length
+    && s.bells.every(b => b && time.test(b.start) && time.test(b.end))
+    && s.days.every(d => d && typeof d.dow === 'number' && d.dow >= 1 && d.dow <= 7 && Array.isArray(d.lessons)));
+}
+
+function catalogEntry(id){
+  if(!catalog || !Array.isArray(catalog.schedules)) return null;
+  return catalog.schedules.find(s => s.id === id) || null;
+}
+function scheduleFileFor(id){
+  const e = catalogEntry(id);
+  return SCHEDULES_DIR + ((e && e.file) ? e.file : id + '.json');
+}
+function defaultScheduleId(){
+  if(catalog && Array.isArray(catalog.schedules) && catalog.schedules.length){
+    const def = catalog.schedules.find(s => s.isDefault);
+    return def ? def.id : catalog.schedules[0].id;
+  }
+  return FALLBACK_ID;
+}
+
+// Наступний навчальний день за списком днів розкладу (а не "завжди понеділок").
+function nextSchoolDayLabel(dow){
+  if(!scheduleDays.length) return '—';
+  for(let step=1; step<=7; step++){
+    const cand = ((dow - 1 + step) % 7) + 1;
+    const day = scheduleDays.find(d => d.dow === cand);
+    if(day) return step === 1 ? 'завтра' : String(day.full || day.short || '').toLowerCase();
+  }
+  return '—';
+}
+
+function renderScheduleTable(schedule){
+  const days = schedule.days.slice().sort((a,b) => a.dow - b.dow);
+  scheduleDays = days;
+  dayCols = {};
+  DAY_NAMES = {};
+  days.forEach((d, i) => {
+    dayCols[d.dow] = i + 2;                                   // 0 — №, 1 — час, далі дні
+    DAY_NAMES[d.dow] = d.full || d.short || ('День ' + d.dow);
+  });
+
+  let html = '<tr><th>№</th><th>Час</th>';
+  days.forEach(d => { html += '<th data-day="'+d.dow+'">'+esc(d.short || d.full || d.dow)+'</th>'; });
+  html += '</tr>';
+
+  schedule.bells.forEach((bell, i) => {
+    html += '<tr data-start="'+esc(bell.start)+'" data-end="'+esc(bell.end)+'">'
+          + '<td>'+(i+1)+'</td>'
+          + '<td class="time">'+esc(bell.start.replace(':','.'))+'–'+esc(bell.end.replace(':','.'))+'</td>';
+    days.forEach(d => {
+      const subject = String(d.lessons[i] || '').trim();
+      html += subject ? '<td>'+esc(subject)+'</td>' : '<td class="empty">—</td>';
+    });
+    html += '</tr>';
+  });
+  document.getElementById('schedule').innerHTML = html;
+}
+
+function applySchedule(schedule, id){
+  currentSchedule = schedule;
+  currentScheduleId = id;
+  HOLIDAYS = Array.isArray(schedule.holidays) ? schedule.holidays : [];
+  activeColors = Object.assign({}, SUBJECT_COLORS, schedule.subjectColors || {});
+
+  document.getElementById('scheduleTitle').textContent = schedule.name || 'Розклад';
+  const subEl = document.getElementById('scheduleSubtitle');
+  subEl.textContent = schedule.subtitle || '';
+  subEl.hidden = !schedule.subtitle;
+  document.title = (schedule.name ? schedule.name + ' — ' : '') + 'поточний урок';
+  document.getElementById('scheduleFooter').textContent =
+    (schedule.updated ? 'Розклад складений: ' + schedule.updated + ' · ' : '') +
+    'час визначається за годинником пристрою';
+
+  renderScheduleTable(schedule);
+  setupSubjectCells();
+  applySubjectColorsToggle();
+  lastPhaseKey = null; // щоб перемикання розкладу не давало бип "зміни уроку"
+  update();
+}
+
+let clockStarted = false;
+function startClock(){
+  if(clockStarted) return;
+  clockStarted = true;
+  setInterval(update, 1000);
+}
+
+function renderScheduleSelect(){
+  const sel = document.getElementById('scheduleSelect');
+  const list = (catalog && Array.isArray(catalog.schedules)) ? catalog.schedules : [];
+  if(!list.length){
+    const id = currentScheduleId || FALLBACK_ID;
+    const name = currentSchedule ? (currentSchedule.name || id) : 'Поточний розклад';
+    sel.innerHTML = '<option value="'+esc(id)+'">'+esc(name)+'</option>';
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  sel.innerHTML = list.map(s =>
+    '<option value="'+esc(s.id)+'">'
+    + esc(s.name || s.id)
+    + (s.isDefault ? ' ★' : '')
+    + (cachedSchedule(s.id) ? ' ✓' : '')
+    + '</option>'
+  ).join('');
+  if(currentScheduleId && catalogEntry(currentScheduleId)) sel.value = currentScheduleId;
+}
+
+function updateScheduleHint(msg, warn){
+  const el = document.getElementById('scheduleHint');
+  if(msg){
+    el.textContent = msg;
+    el.classList.toggle('warn', !!warn);
+    return;
+  }
+  el.classList.remove('warn');
+  const parts = ['★ — за замовчуванням', '✓ — доступний офлайн'];
+  if(currentSchedule && currentSchedule.updated) parts.push('оновлено ' + currentSchedule.updated);
+  el.textContent = parts.join(' · ');
+}
+
+function refreshCatalog(){
+  return fetchJSON(SCHEDULES_DIR + CATALOG_FILE).then(data => {
+    if(!data || !Array.isArray(data.schedules)) throw new Error('bad catalog');
+    catalog = data;
+    cacheCatalog(data);
+    return data;
+  });
+}
+
+// Тихе оновлення вже показаного розкладу: якщо на сервері щось змінили —
+// перемальовуємо, якщо мережі немає — мовчки лишаємось на локальній копії.
+function refreshScheduleInBackground(id){
+  fetchJSON(scheduleFileFor(id)).then(data => {
+    if(!isValidSchedule(data) || id !== currentScheduleId) return;
+    if(JSON.stringify(data) === JSON.stringify(currentSchedule)) return;
+    cacheSchedule(id, data);
+    applySchedule(data, id);
+    renderScheduleSelect();
+    updateScheduleHint();
+  }).catch(()=>{});
+}
+
+function selectSchedule(id){
+  const sel = document.getElementById('scheduleSelect');
+  const cached = cachedSchedule(id);
+  if(cached && isValidSchedule(cached)){
+    settings.scheduleId = id; saveSettings();
+    applySchedule(cached, id);
+    renderScheduleSelect();
+    updateScheduleHint();
+    refreshScheduleInBackground(id);
+    return;
+  }
+  updateScheduleHint('Завантажую розклад…');
+  sel.disabled = true;
+  fetchJSON(scheduleFileFor(id)).then(data => {
+    if(!isValidSchedule(data)) throw new Error('bad schedule json');
+    cacheSchedule(id, data);
+    settings.scheduleId = id; saveSettings();
+    applySchedule(data, id);
+    renderScheduleSelect();
+    updateScheduleHint();
+  }).catch(() => {
+    sel.disabled = false;
+    sel.value = currentScheduleId || sel.value;
+    updateScheduleHint('Цей розклад ще не збережено на пристрої — потрібен інтернет', true);
+  });
+}
+
+function showScheduleError(){
+  document.getElementById('todayView').innerHTML =
+    '<div class="today-empty">Не вдалося завантажити розклад.<br>'
+    + 'Перевір з\'єднання з інтернетом.<br><br>'
+    + '<button type="button" id="retryScheduleBtn" class="install-btn">↻ Спробувати ще раз</button></div>';
+  document.getElementById('retryScheduleBtn').addEventListener('click', () => location.reload());
+  updateScheduleHint('Розклад не завантажено', true);
+}
+
+function bootSchedule(){
+  migrateLegacyNotes();
+  catalog = cachedCatalog();
+
+  const urlId = new URLSearchParams(location.search).get('schedule');
+  if(urlId){ settings.scheduleId = urlId; saveSettings(); }
+  const id = urlId || settings.scheduleId || defaultScheduleId();
+
+  // 1) миттєвий старт із локальної копії
+  const cached = cachedSchedule(id);
+  if(cached && isValidSchedule(cached)){
+    applySchedule(cached, id);
+    startClock();
+  }
+  renderScheduleSelect();
+  updateScheduleHint(cached ? undefined : 'Завантажую розклад…');
+
+  // 2) свіжий каталог, далі свіжий розклад
+  refreshCatalog().catch(()=>null).then(() => {
+    // якщо вибору не було й кешу не було — дефолт визначаємо вже за свіжим каталогом
+    const targetId = (urlId || settings.scheduleId) || defaultScheduleId();
+    renderScheduleSelect();
+
+    if(currentSchedule){
+      updateScheduleHint();
+      refreshScheduleInBackground(currentScheduleId);
+      return;
+    }
+    return fetchJSON(scheduleFileFor(targetId)).then(data => {
+      if(!isValidSchedule(data)) throw new Error('bad schedule json');
+      cacheSchedule(targetId, data);
+      settings.scheduleId = targetId; saveSettings();
+      applySchedule(data, targetId);
+      startClock();
+      renderScheduleSelect();
+      updateScheduleHint();
+    });
+  }).catch(() => {
+    if(!currentSchedule) showScheduleError();
+  });
+}
+
+document.getElementById('scheduleSelect').addEventListener('change', (e) => {
+  selectSchedule(e.target.value);
+});
+
+bootSchedule();
 
 /* ==================== ВСТАНОВЛЕННЯ ЯК ЗАСТОСУНОК ==================== */
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;

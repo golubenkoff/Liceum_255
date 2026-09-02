@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Редактор розкладів</title>
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div>
+    <h1>Редактор розкладів</h1>
+    <p class="topbar-sub">Локальний інструмент · файли лежать у <code>docs/schedules/</code></p>
+  </div>
+  <div class="topbar-actions">
+    <button type="button" class="btn" id="btnReload" title="Перечитати файли з docs/schedules/">↻ З диска</button>
+    <label class="btn" title="Підвантажити JSON-файли вручну">📂 Імпорт
+      <input type="file" id="fileImport" accept="application/json,.json" multiple hidden>
+    </label>
+    <button type="button" class="btn primary" id="btnNew">＋ Новий розклад</button>
+  </div>
+</header>
+
+<div class="banner" id="banner" hidden></div>
+
+<main class="layout">
+  <aside class="sidebar">
+    <h2>Розклади <span class="count" id="schedCount"></span></h2>
+    <ul class="sched-list" id="scheduleList"></ul>
+    <p class="sidebar-note">★ — розклад за замовчуванням у застосунку. Може бути лише один.</p>
+  </aside>
+
+  <section class="editor" id="editor"></section>
+</main>
+
+<footer class="howto">
+  <h3>Як опублікувати зміни</h3>
+  <ol>
+    <li>Натисни <b>Завантажити <code>&lt;id&gt;.json</code></b> для кожного зміненого розкладу і <b>Завантажити <code>index.json</code></b>.</li>
+    <li>Поклади завантажені файли в <code>docs/schedules/</code> (перезаписуючи старі).</li>
+    <li>Видалені розклади прибери руками: <code>git rm docs/schedules/&lt;id&gt;.json</code></li>
+    <li><code>git add docs/schedules &amp;&amp; git commit &amp;&amp; git push</code> — GitHub Pages підхопить самі, у встановлених застосунках розклад оновиться протягом кількох хвилин.</li>
+  </ol>
+</footer>
+
+<script src="admin.js"></script>
+</body>
+</html>
