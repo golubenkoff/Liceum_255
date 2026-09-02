@@ -275,9 +275,13 @@
     font-size:14px;
   }
   .today-row:last-child{border-bottom:none;}
-  .today-row.current{background:#dcfce7;font-weight:700;}
-  .today-row.next{background:#fef3c7;font-weight:700;}
+  .today-row.current{background:#dcfce7 !important;font-weight:700;}
+  .today-row.next{background:#fef3c7 !important;font-weight:700;}
   .today-row.past{opacity:.45;filter:grayscale(70%);}
+  .today-row.subject-tinted{
+    background:color-mix(in srgb, var(--subj) 14%, white);
+    border-left:4px solid var(--subj);
+  }
   .today-num{
     width:26px;height:26px;
     border-radius:50%;
@@ -494,21 +498,21 @@
     <div class="setting-row">
       <span>Кольори предметів у таблиці</span>
       <label class="switch">
-        <input type="checkbox" id="toggleColors">
+        <input type="checkbox" id="toggleColors" aria-label="Кольори предметів у таблиці">
         <span class="slider"></span>
       </label>
     </div>
     <div class="setting-row">
       <span>Прогрес-бар замість таймера</span>
       <label class="switch">
-        <input type="checkbox" id="toggleProgress">
+        <input type="checkbox" id="toggleProgress" aria-label="Прогрес-бар замість таймера">
         <span class="slider"></span>
       </label>
     </div>
     <div class="setting-row">
       <span>Звук + вібро при зміні уроку/перерви</span>
       <label class="switch">
-        <input type="checkbox" id="toggleSound">
+        <input type="checkbox" id="toggleSound" aria-label="Звук і вібро при зміні уроку/перерви">
         <span class="slider"></span>
       </label>
     </div>
@@ -756,8 +760,18 @@ applyTheme();
 /* ==================== ЗВУК + ВІБРО ==================== */
 let audioCtx = null;
 function unlockAudio(){
-  try{ audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }catch(e){}
 }
+// Звук за замовчуванням увімкнено, а браузери дозволяють запускати AudioContext
+// тільки в межах реального жесту користувача. Більшість людей у налаштування не
+// заходять — тому ловимо перший будь-який тап/клік/клавішу на сторінці й одразу
+// розблоковуємо звук, щоб бип на зміні уроку не виявився беззвучним.
+['pointerdown','keydown'].forEach(evt =>
+  window.addEventListener(evt, unlockAudio, { once:true, passive:true })
+);
 function playBeep(){
   if(!settings.sound) return;
   try{
@@ -843,6 +857,10 @@ function updateViewToggleLabel(){
 function renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes){
   const container = document.getElementById('todayView');
   container.dataset.day = jsDay;
+  if(jsDay === -1){
+    container.innerHTML = '<div class="today-empty">Канікули / свято — уроків немає</div>';
+    return;
+  }
   if(jsDay < 1 || jsDay > 5){
     container.innerHTML = '<div class="today-empty">Сьогодні вихідний — уроків немає</div>';
     return;
@@ -857,7 +875,12 @@ function renderTodayView(jsDay, rows, matchedIdx, nextIdx, nowMinutes){
     else if(i === nextIdx) cls += ' next';
     else if(typeof nowMinutes === 'number' && toMinutes(tr.dataset.end) <= nowMinutes) cls += ' past';
     if(getNote(jsDay, i)) cls += ' has-note';
-    html += '<div class="'+cls+'" data-row="'+i+'">'
+    let styleAttr = '';
+    if(settings.subjectColors){
+      cls += ' subject-tinted';
+      styleAttr = ' style="--subj:'+colorForSubject(subject)+'"';
+    }
+    html += '<div class="'+cls+'"'+styleAttr+' data-row="'+i+'">'
       + '<div class="today-num">'+(i+1)+'</div>'
       + '<div class="today-time">'+tr.dataset.start.replace(':','.')+'–'+tr.dataset.end.replace(':','.')+'</div>'
       + '<div class="today-subject">'+subject+'</div>'
@@ -915,7 +938,7 @@ function update(){
   const progressPct = document.getElementById('progressPct');
   const themeColorMeta = document.getElementById('themeColorMeta');
 
-  card.className = 'status-card' + (settings.progressBar ? ' progress-mode' : '');
+  card.className = 'status-card';
   timer.className = 'timer';
 
   function lessonAt(rowIndex, dayIndex){
@@ -992,6 +1015,7 @@ function update(){
     const remaining = endSeconds - nowSeconds;
 
     card.classList.add('lesson');
+    if(settings.progressBar) card.classList.add('progress-mode');
     stateLabel.className = 'state-label lesson';
     stateLabel.textContent = 'Зараз йде урок';
     lessonName.textContent = dayCell ? dayCell.textContent.trim() : '—';
@@ -1030,14 +1054,19 @@ function update(){
     const prevEnd = nextIdx > 0 ? toMinutes(rows[nextIdx-1].dataset.end) : null;
 
     card.classList.add('break');
+    if(settings.progressBar) card.classList.add('progress-mode');
     stateLabel.className = 'state-label break';
     stateLabel.textContent = isBeforeFirst ? 'До початку занять' : 'Перерва. Наступний урок:';
     lessonName.textContent = (nextName && nextName !== '—') ? nextName : 'наступний урок';
     timer.classList.add('break');
     timer.textContent = fmtClock(remaining);
     timerCaption.textContent = isBeforeFirst ? 'до 1-го уроку' : 'до наступного уроку';
-    if(!isBeforeFirst) setProgress(prevEnd, startMin);
-    else progressFill.style.width = '0%', progressPct.textContent = '';
+    if(!isBeforeFirst){
+      setProgress(prevEnd, startMin);
+    } else {
+      progressFill.style.width = '0%';
+      progressPct.textContent = '';
+    }
     nextInfo.innerHTML = 'Далі: <b>' + ((nextName && nextName !== '—') ? nextName : '—') + '</b> о ' + tr.dataset.start;
     themeColorMeta.setAttribute('content', '#d97706');
     phaseKey = 'break-'+jsDay+'-'+nextIdx;
