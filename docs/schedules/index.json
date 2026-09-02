@@ -1,6 +1,4 @@
 {
   "version": 1,
-  "schedules": [
-    { "id": "class7B", "name": "7-Б клас", "file": "class7B.json", "isDefault": true }
-  ]
+  "schedules": [{ "id": "class7B", "name": "7-Б клас", "file": "class7B.json", "isDefault": true }]
 }

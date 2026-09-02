@@ -7,9 +7,20 @@
     Сервер піднімається з КОРЕНЯ репозиторію — інакше адмінка не побачить
     docs\schedules\ (вона читає їх по відносному шляху ../../docs/schedules/).
 
-    Якщо в системі є Python — використовуємо http.server. Якщо немає —
-    піднімаємо власний мінімальний статичний сервер на TcpListener, щоб
+    Якщо в системі є Python — запускаємо serve.py (там та сама логіка).
+    Якщо немає — піднімаємо власний мінімальний сервер на TcpListener, щоб
     інструмент працював на чистій Windows без жодних установок.
+
+    Обидва варіанти дають редактору write-API, щоб він писав розклади прямо
+    в docs\schedules\:
+
+        GET    /__admin/ping             -> {"write": true}
+        PUT    /docs/schedules/<id>.json -> записати
+        DELETE /docs/schedules/<id>.json -> видалити
+
+    Обмеження навмисне жорсткі: слухаємо тільки 127.0.0.1, писати можна лише
+    в docs\schedules\ і лише файли [A-Za-z0-9_-]+.json (без крапок і слешів,
+    тому вийти з теки шаблоном неможливо), тіло — валідний JSON до 512 КБ.
 #>
 
 param(
@@ -32,11 +43,6 @@ if ([string]::IsNullOrWhiteSpace($root)) {
 
 $url = "http://localhost:$Port/tools/admin/"
 
-Write-Host "Корінь:  $root"
-Write-Host "Адмінка: $url"
-Write-Host "Розклад: http://localhost:$Port/docs/"
-Write-Host "Ctrl+C — зупинити"
-
 Start-Job -ScriptBlock {
     param($u)
     Start-Sleep -Seconds 1
@@ -53,7 +59,7 @@ foreach ($candidate in @('python', 'py', 'python3')) {
 if ($python) {
     Push-Location $root
     try {
-        & $python -m http.server $Port
+        & $python (Join-Path $scriptDir 'serve.py') $Port
     } finally {
         Pop-Location
     }
@@ -61,7 +67,15 @@ if ($python) {
 }
 
 # ---------- варіант 2: власний сервер (без Python) ----------
+Write-Host "Корінь:  $root"
+Write-Host "Адмінка: $url"
+Write-Host "Розклад: http://localhost:$Port/docs/"
 Write-Host "Python не знайдено — використовую вбудований сервер PowerShell." -ForegroundColor Yellow
+Write-Host "Запис у docs\schedules\ увімкнено"
+Write-Host "Ctrl+C — зупинити"
+
+$schedulesDir = Join-Path $root 'docs\schedules'
+$maxBody = 512 * 1024
 
 $mime = @{
     '.html' = 'text/html; charset=utf-8'
@@ -89,6 +103,74 @@ function Send-Response {
     $Stream.Flush()
 }
 
+function Send-Json {
+    param($Stream, [int]$Code, [string]$Status, $Object)
+    $json = $Object | ConvertTo-Json -Compress
+    Send-Response $Stream $Code $Status 'application/json; charset=utf-8' ([Text.Encoding]::UTF8.GetBytes($json))
+}
+
+# Шукає порожній рядок (CRLFCRLF), що відділяє заголовки від тіла.
+function Find-HeaderEnd {
+    param([byte[]]$Bytes, [int]$Count)
+    for ($i = 0; $i -le $Count - 4; $i++) {
+        if ($Bytes[$i] -eq 13 -and $Bytes[$i+1] -eq 10 -and $Bytes[$i+2] -eq 13 -and $Bytes[$i+3] -eq 10) { return $i }
+    }
+    return -1
+}
+
+# Читаємо запит сирими байтами: заголовки — ASCII, тіло — UTF-8.
+# Через StreamReader тіло з кирилицею б'ється, тому так.
+function Read-Request {
+    param($Stream)
+    $ms = New-Object System.IO.MemoryStream
+    $buf = New-Object byte[] 8192
+    $headerEnd = -1
+    while ($headerEnd -lt 0) {
+        $n = $Stream.Read($buf, 0, $buf.Length)
+        if ($n -le 0) { return $null }
+        $ms.Write($buf, 0, $n)
+        $arr = $ms.ToArray()
+        $headerEnd = Find-HeaderEnd $arr $arr.Length
+        if ($ms.Length -gt $maxBody + 65536) { return $null }
+    }
+    $arr = $ms.ToArray()
+    $headerText = [Text.Encoding]::ASCII.GetString($arr, 0, $headerEnd)
+    $lines = $headerText -split "`r`n"
+
+    $contentLength = 0
+    foreach ($line in $lines) {
+        if ($line -match '^(?i)content-length:\s*(\d+)\s*$') { $contentLength = [int]$Matches[1] }
+    }
+    if ($contentLength -gt $maxBody) { return $null }
+
+    $bodyStart = $headerEnd + 4
+    $have = $arr.Length - $bodyStart
+    while ($have -lt $contentLength) {
+        $n = $Stream.Read($buf, 0, $buf.Length)
+        if ($n -le 0) { break }
+        $ms.Write($buf, 0, $n)
+        $have = $ms.Length - $bodyStart
+    }
+    $arr = $ms.ToArray()
+
+    $body = ''
+    if ($contentLength -gt 0 -and $arr.Length -ge $bodyStart + $contentLength) {
+        $body = [Text.Encoding]::UTF8.GetString($arr, $bodyStart, $contentLength)
+    }
+    return @{ RequestLine = $lines[0]; Body = $body }
+}
+
+# Шлях на диску для write-запиту, або $null якщо запит не дозволений.
+function Resolve-ScheduleTarget {
+    param([string]$UrlPath)
+    if ($UrlPath -notmatch '^/docs/schedules/([^/]+)$') { return $null }
+    $name = [System.Uri]::UnescapeDataString($Matches[1])
+    if ($name -notmatch '^[A-Za-z0-9_-]+\.json$') { return $null }
+    $full = [IO.Path]::GetFullPath((Join-Path $schedulesDir $name))
+    if ([IO.Path]::GetDirectoryName($full) -ne [IO.Path]::GetFullPath($schedulesDir)) { return $null }
+    return $full
+}
+
 $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, $Port)
 $listener.Start()
 
@@ -97,26 +179,69 @@ try {
         $client = $listener.AcceptTcpClient()
         try {
             $stream = $client.GetStream()
-            $reader = New-Object System.IO.StreamReader($stream, [Text.Encoding]::ASCII, $false, 1024, $true)
+            $req = Read-Request $stream
+            if ($null -eq $req) { continue }
 
-            $requestLine = $reader.ReadLine()
-            if ([string]::IsNullOrWhiteSpace($requestLine)) { continue }
-            while ($true) {
-                $line = $reader.ReadLine()
-                if ($null -eq $line -or $line -eq '') { break }
-            }
+            $parts = $req.RequestLine.Split(' ')
+            if ($parts.Count -lt 2) { continue }
+            $method = $parts[0].ToUpper()
+            $rawPath = $parts[1].Split('?')[0]
+            $decoded = [System.Uri]::UnescapeDataString($rawPath)
 
-            $parts = $requestLine.Split(' ')
-            if ($parts.Count -lt 2 -or $parts[0] -ne 'GET') {
-                Send-Response $stream 405 'Method Not Allowed' 'text/plain; charset=utf-8' ([Text.Encoding]::UTF8.GetBytes('Only GET'))
+            # ---- write-API ----
+            if ($method -eq 'PUT' -or $method -eq 'DELETE') {
+                $target = Resolve-ScheduleTarget $rawPath
+                if (-not $target) {
+                    Send-Json $stream 403 'Forbidden' @{ error = 'дозволено лише docs/schedules/<id>.json' }
+                    continue
+                }
+                if ($method -eq 'PUT') {
+                    try { $null = $req.Body | ConvertFrom-Json }
+                    catch {
+                        Send-Json $stream 400 'Bad Request' @{ error = 'невалідний JSON' }
+                        continue
+                    }
+                    try {
+                        $null = New-Item -ItemType Directory -Force -Path $schedulesDir
+                        $tmp = "$target.tmp"
+                        # без BOM — інакше JSON.parse у браузері спіткнеться
+                        [IO.File]::WriteAllText($tmp, $req.Body, (New-Object Text.UTF8Encoding($false)))
+                        Move-Item -LiteralPath $tmp -Destination $target -Force
+                    } catch {
+                        Send-Json $stream 500 'Internal Server Error' @{ error = $_.Exception.Message }
+                        continue
+                    }
+                    Write-Host "  записано docs\schedules\$([IO.Path]::GetFileName($target))"
+                    Send-Json $stream 200 'OK' @{ ok = $true }
+                } else {
+                    if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
+                        Send-Json $stream 404 'Not Found' @{ error = 'файла немає' }
+                        continue
+                    }
+                    try { Remove-Item -LiteralPath $target -Force }
+                    catch {
+                        Send-Json $stream 500 'Internal Server Error' @{ error = $_.Exception.Message }
+                        continue
+                    }
+                    Write-Host "  видалено docs\schedules\$([IO.Path]::GetFileName($target))"
+                    Send-Json $stream 200 'OK' @{ ok = $true }
+                }
                 continue
             }
 
-            $rawPath = $parts[1].Split('?')[0]
-            $decoded = [System.Uri]::UnescapeDataString($rawPath)
+            if ($method -ne 'GET') {
+                Send-Response $stream 405 'Method Not Allowed' 'text/plain; charset=utf-8' ([Text.Encoding]::UTF8.GetBytes('Only GET/PUT/DELETE'))
+                continue
+            }
+
+            if ($decoded -eq '/__admin/ping') {
+                Send-Json $stream 200 'OK' @{ write = $true; root = $root; dir = 'docs/schedules' }
+                continue
+            }
+
+            # ---- статика ----
             if ($decoded.EndsWith('/')) { $decoded += 'index.html' }
             $relative = $decoded.TrimStart('/').Replace('/', [IO.Path]::DirectorySeparatorChar)
-
             $full = [IO.Path]::GetFullPath((Join-Path $root $relative))
 
             # не випускаємо за межі кореня репозиторію
@@ -124,11 +249,9 @@ try {
                 Send-Response $stream 403 'Forbidden' 'text/plain; charset=utf-8' ([Text.Encoding]::UTF8.GetBytes('Forbidden'))
                 continue
             }
-
             if (Test-Path -LiteralPath $full -PathType Container) {
                 $full = Join-Path $full 'index.html'
             }
-
             if (-not (Test-Path -LiteralPath $full -PathType Leaf)) {
                 Send-Response $stream 404 'Not Found' 'text/plain; charset=utf-8' ([Text.Encoding]::UTF8.GetBytes("404: $decoded"))
                 continue

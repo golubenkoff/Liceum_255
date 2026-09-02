@@ -33,7 +33,20 @@ body{
 }
 .topbar h1{margin:0;font-size:18px;}
 .topbar-sub{margin:2px 0 0;color:var(--muted);font-size:12px;}
-.topbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.topbar-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+.write-status{
+  font-size:12px;
+  padding:5px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  white-space:nowrap;
+  color:var(--muted);
+}
+.write-status.on{background:#ecfdf5;border-color:#a7f3d0;color:#065f46;}
+.write-status.off{background:#f8fafc;}
+.write-status.warn{background:#fffbeb;border-color:#fde68a;color:#92400e;}
+.write-status.error{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
 
 .btn{
   display:inline-flex;

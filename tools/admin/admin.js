@@ -1,11 +1,24 @@
 /* Редактор розкладів для docs/schedules/.
-   Бекенду немає — інструмент читає файли через fetch (коли відкритий з
-   локального сервера) або через "Імпорт", а результат віддає завантаженням.
-   Робоча копія живе в localStorage, щоб незбережені правки не пропадали. */
+
+   Два режими роботи, визначаються автоматично при старті:
+
+   1. РЕЖИМ ЗАПИСУ — сторінку відкрито через tools/admin/serve.sh (serve.py)
+      або serve.ps1. Сервер дає write-API (/__admin/ping, PUT/DELETE на
+      /docs/schedules/<id>.json), тому кожна правка одразу лягає у файл.
+      Лишається тільки закомітити.
+
+   2. РЕЖИМ ЗАВАНТАЖЕННЯ — сторінку відкрито через звичайний статичний сервер
+      (python3 -m http.server) або як file://. Писати нікуди, тому працює
+      як раніше: правки живуть у localStorage, файли качаються руками.
+
+   Кнопки експорту доступні завжди — режим запису їх не скасовує.            */
 
 const SCHEDULES_URL = '../../docs/schedules/';
+const PING_URL      = '../../__admin/ping';
+const WRITE_URL     = '/docs/schedules/';   // шлях write-API, від кореня репо
 const CATALOG_FILE  = 'index.json';
 const WORKSPACE_KEY = 'adminWorkspace_v1';
+const FLUSH_DELAY   = 700;                  // мс тиші перед записом на диск
 
 // Той самий генератор палітри, що й у docs/index.html: предмети розкладу
 // сортуються за алфавітом і розкидаються по колу відтінків золотим кутом.
@@ -46,6 +59,11 @@ const DEFAULT_BELLS = [
 
 let state = { order: [], byId: {}, currentId: null };
 
+let writeMode = false;          // сервер приймає PUT/DELETE
+let pendingWrites = {};         // id -> true, що чекає запису
+let flushTimer = null;
+let flushing = false;
+
 /* ==================== утиліти ==================== */
 function esc(s){
   return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -81,13 +99,102 @@ function loadWorkspace(){
   return null;
 }
 
-/* ==================== читання з диска ==================== */
+/* ==================== HTTP ==================== */
 function fetchJSON(url){
   return fetch(url, { cache:'no-store' }).then(r => {
     if(!r.ok) throw new Error(url + ' → HTTP ' + r.status);
     return r.json();
   });
 }
+
+/* ==================== запис на диск ==================== */
+
+function probeWriteMode(){
+  return fetch(PING_URL, { cache:'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(info => { writeMode = !!(info && info.write); })
+    .catch(() => { writeMode = false; })
+    .then(() => { renderWriteStatus(); return writeMode; });
+}
+
+function writeStatus(text, kind){
+  const el = $('#writeStatus');
+  el.className = 'write-status' + (kind ? ' ' + kind : '');
+  el.textContent = text;
+}
+function renderWriteStatus(){
+  if(writeMode) writeStatus('💾 Пишу у docs/schedules/', 'on');
+  else writeStatus('⬇ Тільки завантаження', 'off');
+  $('#howtoWrite').hidden = !writeMode;
+  $('#howtoDownload').hidden = writeMode;
+}
+function nowClock(){
+  const d = new Date();
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2,'0')).join(':');
+}
+
+function putJSON(file, data){
+  return fetch(WRITE_URL + file, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: prettyJSON(data) + '\n',
+  }).then(r => {
+    if(r.ok) return;
+    return r.json().catch(() => ({})).then(j => { throw new Error(j.error || ('HTTP ' + r.status)); });
+  });
+}
+function deleteJSON(file){
+  return fetch(WRITE_URL + file, { method:'DELETE' }).then(r => {
+    if(r.ok || r.status === 404) return;
+    return r.json().catch(() => ({})).then(j => { throw new Error(j.error || ('HTTP ' + r.status)); });
+  });
+}
+
+// Позначити розклад як такий, що чекає запису. Каталог перезаписуємо завжди —
+// він крихітний, а змінити його могло майже будь-що (назва, id, ★).
+function markDirty(id){
+  if(!writeMode) return;
+  if(id) pendingWrites[id] = true;
+  clearTimeout(flushTimer);
+  flushTimer = setTimeout(flushToDisk, FLUSH_DELAY);
+}
+function markAllDirty(){
+  state.order.forEach(id => { pendingWrites[id] = true; });
+  markDirty(null);
+}
+
+function flushToDisk(){
+  if(!writeMode || flushing) return;
+  const ids = Object.keys(pendingWrites);
+  pendingWrites = {};
+
+  // На диск не потрапляє розклад з помилками валідації — інакше в репозиторії
+  // опиниться зламаний файл, який хтось закомітить не глянувши.
+  const blocked = [];
+  const ready = ids.filter(id => {
+    const s = state.byId[id];
+    if(!s) return false;
+    if(validate(s).some(i => i.level === 'error')){ blocked.push(id); return false; }
+    return true;
+  });
+
+  flushing = true;
+  writeStatus('💾 Записую…', 'on');
+  Promise.all(ready.map(id => putJSON(id + '.json', cleanForExport(state.byId[id]))))
+    .then(() => putJSON(CATALOG_FILE, buildCatalog()))
+    .then(() => {
+      if(blocked.length) writeStatus('⚠ Не записано (є помилки): ' + blocked.join(', '), 'warn');
+      else writeStatus('💾 Збережено ' + nowClock(), 'on');
+    })
+    .catch(err => {
+      // не втрачаємо позначки — спробуємо ще раз наступною правкою
+      ids.forEach(id => { pendingWrites[id] = true; });
+      writeStatus('✕ Помилка запису: ' + err.message, 'error');
+    })
+    .then(() => { flushing = false; });
+}
+
+/* ==================== читання з диска ==================== */
 
 function loadFromDisk(){
   banner('Читаю docs/schedules/…');
@@ -112,7 +219,8 @@ function loadFromDisk(){
       state.currentId = state.order[0] || null;
       saveWorkspace();
       renderAll();
-      banner('Завантажено розкладів: ' + state.order.length, null);
+      banner('Завантажено розкладів: ' + state.order.length
+             + (writeMode ? '. Режим запису: правки одразу лягають у файли, лишиться тільки закомітити.' : ''), null);
     })
     .catch(err => {
       banner('Не вдалося прочитати файли (' + err.message + '). Запусти через serve.sh / serve.ps1 '
@@ -151,6 +259,7 @@ function addSchedule(sched){
   state.byId[sched.id] = sched;
   state.currentId = sched.id;
   saveWorkspace();
+  markDirty(sched.id);
   renderAll();
 }
 
@@ -169,15 +278,30 @@ function cloneSchedule(id){
 function deleteSchedule(id){
   const s = state.byId[id];
   if(!s) return;
-  if(!confirm('Видалити розклад «' + (s.name || id) + '» з робочого набору?\n\n'
-            + 'Файл docs/schedules/' + id + '.json треба буде прибрати вручну:\n'
-            + 'git rm docs/schedules/' + id + '.json')) return;
+  const question = writeMode
+    ? 'Видалити розклад «' + (s.name || id) + '»?\n\nФайл docs/schedules/' + id + '.json буде видалено з диска.'
+    : 'Видалити розклад «' + (s.name || id) + '» з робочого набору?\n\n'
+      + 'Файл docs/schedules/' + id + '.json треба буде прибрати вручну:\n'
+      + 'git rm docs/schedules/' + id + '.json';
+  if(!confirm(question)) return;
+
   delete state.byId[id];
+  delete pendingWrites[id];
   state.order = state.order.filter(x => x !== id);
   if(state.currentId === id) state.currentId = state.order[0] || null;
   saveWorkspace();
   renderAll();
-  banner('Прибрано з набору: ' + id + '. Не забудь git rm docs/schedules/' + id + '.json', 'warn');
+
+  if(writeMode){
+    writeStatus('💾 Видаляю…', 'on');
+    deleteJSON(id + '.json')
+      .then(() => putJSON(CATALOG_FILE, buildCatalog()))
+      .then(() => writeStatus('💾 Видалено ' + nowClock(), 'on'))
+      .catch(err => writeStatus('✕ Помилка видалення: ' + err.message, 'error'));
+    banner('Видалено з диска: docs/schedules/' + id + '.json', 'warn');
+  } else {
+    banner('Прибрано з набору: ' + id + '. Не забудь git rm docs/schedules/' + id + '.json', 'warn');
+  }
 }
 
 // Розклад за замовчуванням може бути лише один — вмикання знімає прапорець з решти.
@@ -185,6 +309,7 @@ function setDefault(id, on){
   state.order.forEach(x => { state.byId[x].isDefault = false; });
   if(on) state.byId[id].isDefault = true;
   saveWorkspace();
+  markAllDirty(); // прапорець isDefault лежить у кожному файлі, не лише в каталозі
   renderAll();
 }
 
@@ -196,9 +321,13 @@ function renameId(oldId, newId){
   sched.id = newId;
   state.byId[newId] = sched;
   delete state.byId[oldId];
+  delete pendingWrites[oldId];
   state.order = state.order.map(x => x === oldId ? newId : x);
   if(state.currentId === oldId) state.currentId = newId;
   saveWorkspace();
+  // ім'я файла = id, тому перейменування на диску це "записати новий + прибрати старий"
+  if(writeMode) deleteJSON(oldId + '.json').catch(()=>{});
+  markDirty(newId);
   renderAll();
   return true;
 }
@@ -213,7 +342,9 @@ function validate(sched){
   const err  = t => issues.push({ level:'error', text:t });
   const warn = t => issues.push({ level:'warn',  text:t });
 
-  if(!/^[a-z0-9-]+$/.test(sched.id || '')) err('Ідентифікатор може містити лише малі латинські літери, цифри й дефіс');
+  // Великі літери дозволені навмисно: наявний розклад називається class7B.
+  // Крапок і слешів немає — id стає ім'ям файла, тому це ще й захист від виходу з теки.
+  if(!/^[A-Za-z0-9_-]+$/.test(sched.id || '')) err('Ідентифікатор: лише латинські літери, цифри, дефіс і підкреслення');
   if(!String(sched.name || '').trim()) err('Порожня назва розкладу');
 
   const dupes = state.order.filter(x => x !== sched.id && state.byId[x].id === sched.id);
@@ -274,6 +405,37 @@ function cleanForExport(sched){
   const colors = sched.subjectColors || {};
   if(Object.keys(colors).length) out.subjectColors = colors;
   return out;
+}
+
+// JSON.stringify(x, null, 2) роздуває файл: кожен дзвінок стає п'ятьма рядками.
+// Друкуємо самі — короткі об'єкти лишаємо в один рядок, як у файлах, написаних
+// руками. Так розклад читабельний у редакторі й дає маленький git diff.
+const INLINE_LIMIT = 90;
+
+function inlineJSON(v){
+  if(v === null || typeof v !== 'object') return JSON.stringify(v);
+  if(Array.isArray(v)) return '[' + v.map(inlineJSON).join(', ') + ']';
+  return '{ ' + Object.keys(v).map(k => JSON.stringify(k) + ': ' + inlineJSON(v[k])).join(', ') + ' }';
+}
+
+function prettyJSON(value, indent){
+  indent = indent || '';
+  if(value === null || typeof value !== 'object') return JSON.stringify(value);
+  // Списки уроків (масив рядків) завжди по рядку на елемент: інакше короткий
+  // день влізає в рядок, довгий ні, і додавання одного предмета розносить діф.
+  const listOfPrimitives = Array.isArray(value) && value.length
+    && value.every(v => v === null || typeof v !== 'object');
+  const flat = inlineJSON(value);
+  if(!listOfPrimitives && flat.length <= INLINE_LIMIT) return flat;
+  const inner = indent + '  ';
+  if(Array.isArray(value)){
+    if(!value.length) return '[]';
+    return '[\n' + value.map(v => inner + prettyJSON(v, inner)).join(',\n') + '\n' + indent + ']';
+  }
+  const keys = Object.keys(value);
+  if(!keys.length) return '{}';
+  return '{\n' + keys.map(k => inner + JSON.stringify(k) + ': ' + prettyJSON(value[k], inner)).join(',\n')
+       + '\n' + indent + '}';
 }
 
 function buildCatalog(){
@@ -354,7 +516,7 @@ function renderEditor(){
   html += '<h2>' + esc(s.name || s.id) + '</h2>';
 
   html += '<div class="field-grid">'
-    + field('Ідентифікатор (ім\'я файлу)', '<input type="text" id="fId" value="' + esc(s.id) + '">', 'малі латинські літери, цифри, дефіс → ' + esc(s.id) + '.json')
+    + field('Ідентифікатор (ім\'я файлу)', '<input type="text" id="fId" value="' + esc(s.id) + '">', 'латинські літери, цифри, дефіс → ' + esc(s.id) + '.json')
     + field('Назва (заголовок сторінки)', '<input type="text" id="fName" value="' + esc(s.name || '') + '">')
     + field('Підзаголовок', '<input type="text" id="fSubtitle" value="' + esc(s.subtitle || '') + '">', 'школа, класний керівник тощо')
     + field('Дата складання', '<input type="date" id="fUpdated" value="' + esc(s.updated || '') + '">')
@@ -500,6 +662,7 @@ $('#editor').addEventListener('input', (e) => {
   else return;
 
   saveWorkspace();
+  markDirty(s.id);
   if(t.id === 'fName') renderList();
 });
 
@@ -519,6 +682,7 @@ $('#editor').addEventListener('change', (e) => {
     s.days[i].short = DOW_NAMES[dow][0];
     s.days[i].full  = DOW_NAMES[dow][1];
     saveWorkspace();
+    markDirty(s.id);
     renderAll();
     return;
   }
@@ -573,22 +737,26 @@ $('#editor').addEventListener('click', (e) => {
       break;
     case 'fix-palette':
       s.subjectColors = Object.assign(generatedPalette(s), s.subjectColors || {});
-      banner('Автопалітру записано в розклад — не забудь експортувати JSON', null);
+      banner('Автопалітру записано в розклад' + (writeMode ? '' : ' — не забудь експортувати JSON'), null);
       break;
     case 'reset-palette':
       if(!confirm('Прибрати всі кольори з JSON? Сторінка згенерує їх заново з назв предметів.')) return;
       delete s.subjectColors;
       break;
     case 'export-schedule':
-      download(s.id + '.json', JSON.stringify(cleanForExport(s), null, 2) + '\n');
-      banner('Поклади ' + s.id + '.json у docs/schedules/', null);
+      download(s.id + '.json', prettyJSON(cleanForExport(s)) + '\n');
+      banner(writeMode
+        ? 'Копію завантажено. На диску файл і так уже актуальний.'
+        : 'Поклади ' + s.id + '.json у docs/schedules/', null);
       return;
     case 'export-catalog':
-      download(CATALOG_FILE, JSON.stringify(buildCatalog(), null, 2) + '\n');
-      banner('Поклади index.json у docs/schedules/', null);
+      download(CATALOG_FILE, prettyJSON(buildCatalog()) + '\n');
+      banner(writeMode
+        ? 'Копію завантажено. На диску каталог і так уже актуальний.'
+        : 'Поклади index.json у docs/schedules/', null);
       return;
     case 'copy-json': {
-      const text = JSON.stringify(cleanForExport(s), null, 2);
+      const text = prettyJSON(cleanForExport(s));
       if(navigator.clipboard) navigator.clipboard.writeText(text).then(
         () => banner('JSON скопійовано в буфер', null),
         () => banner('Не вдалося скопіювати — браузер заблокував доступ до буфера', 'error'));
@@ -599,16 +767,22 @@ $('#editor').addEventListener('click', (e) => {
   }
 
   saveWorkspace();
+  markDirty(s.id);
   renderAll();
 });
 
 $('#btnNew').addEventListener('click', () => {
   addSchedule(blankSchedule());
-  banner('Створено новий розклад — заповни сітку й експортуй', null);
+  banner(writeMode
+    ? 'Створено новий розклад — заповни сітку, файл запишеться сам'
+    : 'Створено новий розклад — заповни сітку й експортуй', null);
 });
 
 $('#btnReload').addEventListener('click', () => {
-  if(state.order.length && !confirm('Перечитати файли з диска? Незбережені правки в робочій копії пропадуть.')) return;
+  const warn = writeMode
+    ? 'Перечитати файли з диска?'
+    : 'Перечитати файли з диска? Незбережені правки в робочій копії пропадуть.';
+  if(state.order.length && !confirm(warn)) return;
   loadFromDisk();
 });
 
@@ -626,6 +800,7 @@ $('#fileImport').addEventListener('change', (e) => {
     if(!state.byId[id]) state.order.push(id);
     state.byId[id] = data;
     state.currentId = id;
+    markDirty(id);
     added++;
   }))).then(() => {
     saveWorkspace();
@@ -636,15 +811,35 @@ $('#fileImport').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
-/* ==================== старт ==================== */
-const ws = loadWorkspace();
-if(ws){
-  state.order = ws.order;
-  state.byId = ws.byId;
-  state.currentId = ws.order[0] || null;
-  renderAll();
-  banner('Відновлено робочу копію з браузера. «↻ З диска» — перечитати файли заново.', 'warn');
-} else {
-  renderAll();
-  loadFromDisk();
-}
+/* ==================== старт ====================
+   У режимі запису джерело істини — диск: усе, що редагується, туди ж і лягає
+   протягом секунди, тож відновлювати робочу копію з браузера нема сенсу (і
+   шкідливо — вона була б старішою за файли). У режимі завантаження навпаки:
+   localStorage — єдине місце, де переживають незакінчені правки.            */
+renderAll();
+probeWriteMode().then(() => {
+  if(writeMode){
+    loadFromDisk();
+    return;
+  }
+  const ws = loadWorkspace();
+  if(ws){
+    state.order = ws.order;
+    state.byId = ws.byId;
+    state.currentId = ws.order[0] || null;
+    renderAll();
+    banner('Відновлено робочу копію з браузера. «↻ З диска» — перечитати файли заново. '
+         + 'Щоб редактор писав файли сам, запусти tools/admin/serve.sh (або serve.ps1).', 'warn');
+  } else {
+    loadFromDisk();
+  }
+});
+
+// Якщо вкладку закривають з незаписаними правками — не мовчимо.
+window.addEventListener('beforeunload', (e) => {
+  if(!writeMode) return;
+  if(!Object.keys(pendingWrites).length && !flushing) return;
+  flushToDisk();
+  e.preventDefault();
+  e.returnValue = '';
+});

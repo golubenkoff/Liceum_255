@@ -6,6 +6,10 @@
 #
 # Сервер піднімається з КОРЕНЯ репозиторію — інакше адмінка не побачить
 # docs/schedules/ (вона читає їх по відносному шляху ../../docs/schedules/).
+#
+# Використовує serve.py — це той самий роздавач статики плюс маленький write-API,
+# завдяки якому редактор пише розклади прямо в docs/schedules/, а не через
+# "завантажити файл і покласти руками". Деталі й обмеження — у serve.py.
 
 set -euo pipefail
 
@@ -28,12 +32,8 @@ fi
 
 URL="http://localhost:${PORT}/tools/admin/"
 
-echo "Корінь:  $ROOT"
-echo "Адмінка: $URL"
-echo "Розклад: http://localhost:${PORT}/docs/"
-echo "Ctrl+C — зупинити"
-
-# браузер відкриваємо трохи згодом, щоб сервер устиг піднятись
+# банер друкує сам serve.py — тут лише відкриваємо браузер трохи згодом,
+# щоб сервер устиг піднятись
 (
   sleep 1
   if command -v open >/dev/null 2>&1; then open "$URL"
@@ -42,4 +42,4 @@ echo "Ctrl+C — зупинити"
 ) >/dev/null 2>&1 &
 
 cd "$ROOT"
-exec "$PY" -m http.server "$PORT"
+exec "$PY" "$SCRIPT_DIR/serve.py" "$PORT"

@@ -14,6 +14,7 @@
     <p class="topbar-sub">Локальний інструмент · файли лежать у <code>docs/schedules/</code></p>
   </div>
   <div class="topbar-actions">
+    <span class="write-status" id="writeStatus">…</span>
     <button type="button" class="btn" id="btnReload" title="Перечитати файли з docs/schedules/">↻ З диска</button>
     <label class="btn" title="Підвантажити JSON-файли вручну">📂 Імпорт
       <input type="file" id="fileImport" accept="application/json,.json" multiple hidden>
@@ -36,11 +37,18 @@
 
 <footer class="howto">
   <h3>Як опублікувати зміни</h3>
-  <ol>
+  <ol id="howtoWrite" hidden>
+    <li>Нічого качати не треба — правки вже у файлах <code>docs/schedules/</code>, редактор пише їх сам.</li>
+    <li>Перевір, що вийшло: <code>git status</code> / <code>git diff docs/schedules</code></li>
+    <li><code>git add docs/schedules &amp;&amp; git commit &amp;&amp; git push</code> — GitHub Pages опублікує сама, у встановлених застосунках розклад оновиться протягом кількох хвилин.</li>
+    <li>Розклад із помилками валідації на диск <b>не</b> пишеться — дивись блок «Перевірка» в редакторі.</li>
+  </ol>
+  <ol id="howtoDownload" hidden>
     <li>Натисни <b>Завантажити <code>&lt;id&gt;.json</code></b> для кожного зміненого розкладу і <b>Завантажити <code>index.json</code></b>.</li>
     <li>Поклади завантажені файли в <code>docs/schedules/</code> (перезаписуючи старі).</li>
     <li>Видалені розклади прибери руками: <code>git rm docs/schedules/&lt;id&gt;.json</code></li>
     <li><code>git add docs/schedules &amp;&amp; git commit &amp;&amp; git push</code> — GitHub Pages підхопить самі, у встановлених застосунках розклад оновиться протягом кількох хвилин.</li>
+    <li>Щоб редактор писав файли сам, запусти його через <code>tools/admin/serve.sh</code> (macOS/Linux) або <code>tools\admin\serve.ps1</code> (Windows).</li>
   </ol>
 </footer>
 
