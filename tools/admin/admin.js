@@ -7,32 +7,29 @@ const SCHEDULES_URL = '../../docs/schedules/';
 const CATALOG_FILE  = 'index.json';
 const WORKSPACE_KEY = 'adminWorkspace_v1';
 
-// Копія базової палітри з docs/index.html — потрібна лише щоб показати
-// у пікері реальний колір предмета. У JSON пишемо тільки те, що змінили.
-const BASE_SUBJECT_COLORS = {
-  "Здоров'я, безпека, добробут": '#0891b2',
-  'Фізика': '#7c3aed',
-  'Географія': '#059669',
-  'Українська література': '#dc2626',
-  'Фізична культура': '#ea580c',
-  'Геометрія': '#2563eb',
-  'Англійська мова': '#db2777',
-  'Алгебра': '#4f46e5',
-  'Українська мова': '#b91c1c',
-  'Хімія': '#0d9488',
-  'Біологія': '#65a30d',
-  'Зарубіжна література': '#c026d3',
-  'Історія': '#a16207',
-  'Трудове навчання': '#78716c',
-  'Мистецтво': '#e11d48',
-  'Інформатика': '#0284c7',
-};
-const FALLBACK_PALETTE = ['#0891b2','#7c3aed','#059669','#dc2626','#ea580c','#2563eb','#db2777','#4f46e5'];
-function colorForSubject(name){
-  if(BASE_SUBJECT_COLORS[name]) return BASE_SUBJECT_COLORS[name];
-  let h = 0;
-  for(let i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) >>> 0;
-  return FALLBACK_PALETTE[h % FALLBACK_PALETTE.length];
+// Той самий генератор палітри, що й у docs/index.html: предмети розкладу
+// сортуються за алфавітом і розкидаються по колу відтінків золотим кутом.
+// Дублювання свідоме — інструмент має лишатись самодостатнім, а функція
+// чиста й детермінована, тому прев'ю тут збігається з тим, що покаже сторінка.
+// Якщо правитимеш формулу — правити в обох місцях.
+const GOLDEN_ANGLE = 137.508;
+
+function hslToHex(h, s, l){
+  s /= 100; l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const k = n => (n + h / 30) % 12;
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const hex = v => Math.round(v * 255).toString(16).padStart(2, '0');
+  return '#' + hex(f(0)) + hex(f(8)) + hex(f(4));
+}
+function paletteColor(index){
+  return hslToHex((index * GOLDEN_ANGLE) % 360, 58 + (index % 3) * 7, 38 + (index % 2) * 8);
+}
+// Автоматична палітра розкладу: предмет → колір (без урахування ручних правок).
+function generatedPalette(sched){
+  const out = {};
+  subjectsOf(sched).forEach((name, i) => { out[name] = paletteColor(i); });
+  return out;
 }
 
 const DOW_NAMES = {
@@ -416,16 +413,24 @@ function renderEditor(){
   if(!subjects.length){
     html += '<p class="field"><span class="hint">Заповни сітку — тут з\'являться предмети.</span></p>';
   } else {
+    const auto = generatedPalette(s);
+    const overrides = s.subjectColors || {};
     html += '<div class="color-list">' + subjects.map(name => {
-      const overridden = s.subjectColors && s.subjectColors[name];
-      const value = overridden || colorForSubject(name);
-      return '<span class="color-chip">'
-        + '<input type="color" data-color="' + esc(name) + '" value="' + esc(value) + '">'
+      const overridden = overrides[name];
+      return '<span class="color-chip' + (overridden ? ' overridden' : '') + '">'
+        + '<input type="color" data-color="' + esc(name) + '" value="' + esc(overridden || auto[name]) + '">'
         + esc(name)
-        + (overridden ? '<button type="button" class="reset" data-act="reset-color" data-name="' + esc(name) + '" title="Повернути стандартний">↺</button>' : '')
+        + (overridden ? '<button type="button" class="reset" data-act="reset-color" data-name="' + esc(name) + '" title="Повернути автоматичний">↺</button>' : '')
         + '</span>';
     }).join('') + '</div>'
-    + '<p class="field"><span class="hint">Змінені кольори потраплять у JSON, решта береться зі стандартної палітри сторінки.</span></p>';
+    + '<div class="row-actions">'
+    +   '<button type="button" class="btn small" data-act="fix-palette">🎨 Закріпити автопалітру в JSON</button>'
+    +   '<button type="button" class="btn small danger" data-act="reset-palette"'
+    +     (Object.keys(overrides).length ? '' : ' disabled') + '>↺ Скинути всі кольори</button>'
+    + '</div>'
+    + '<p class="field"><span class="hint">Кольори генеруються з назв предметів самі — вручну чіпати не обов\'язково. '
+    + 'У JSON потрапляє лише те, що ти змінив (зараз: ' + Object.keys(overrides).length + '). '
+    + '«Закріпити» записує всю автопалітру у файл — тоді кольори будуть однакові на всіх пристроях.</span></p>';
   }
 
   // ---- валідація + експорт ----
@@ -565,6 +570,14 @@ $('#editor').addEventListener('click', (e) => {
         delete s.subjectColors[btn.dataset.name];
         if(!Object.keys(s.subjectColors).length) delete s.subjectColors;
       }
+      break;
+    case 'fix-palette':
+      s.subjectColors = Object.assign(generatedPalette(s), s.subjectColors || {});
+      banner('Автопалітру записано в розклад — не забудь експортувати JSON', null);
+      break;
+    case 'reset-palette':
+      if(!confirm('Прибрати всі кольори з JSON? Сторінка згенерує їх заново з назв предметів.')) return;
+      delete s.subjectColors;
       break;
     case 'export-schedule':
       download(s.id + '.json', JSON.stringify(cleanForExport(s), null, 2) + '\n');
