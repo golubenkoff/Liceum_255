@@ -264,6 +264,207 @@
   }
   .next-info b{color:#1e293b;}
 
+  /* ---------- повітряна тривога + хвилина мовчання ----------
+     Обидва стани накладаються поверх звичайної картки: класи додаються в update(),
+     який щосекунди скидає card.className, тому вони не «залипають».            */
+  .status-card.silence{
+    background:linear-gradient(135deg,#e2e8f0,#ffffff);
+    border:2px solid #94a3b8;
+  }
+  /* Тривога забирає всю картку: насичений червоний фон, білий текст і перелив,
+     що повільно пробігає зліва направо. Це має читатись через кімнату, а не
+     виглядати як ще одне сповіщення.
+     Стоїть НИЖЧЕ .status-card.silence навмисно: специфічність у них однакова,
+     тож виграє те, що оголошено пізніше. О 9:00 під тривогою картка має
+     лишатись червоною, а не сірою. */
+  .status-card.alert-on{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(135deg,#991b1b 0%,#dc2626 45%,#b91c1c 100%);
+    border:2px solid #7f1d1d;
+    /* Статичне зовнішнє свічення. Не анімоване навмисне: анімований box-shadow
+       змушував би браузер перемальовувати картку 60 разів на секунду — на
+       слабкому телефоні це їсть батарею й підгальмовує таймер. Те, що «дихає»,
+       винесено в окремі шари нижче, де анімується лише opacity/transform,
+       а вони композитяться на GPU. */
+    box-shadow:0 20px 50px rgba(0,0,0,0.45), 0 0 34px rgba(220,38,38,0.55);
+  }
+  /* Шар 1 — перелив: широкий світлий блік, що проїжджає впоперек картки. */
+  .status-card.alert-on::before{
+    content:'';
+    position:absolute;
+    top:-50%;
+    bottom:-50%;
+    left:0;
+    width:60%;
+    z-index:0;
+    pointer-events:none;
+    background:linear-gradient(100deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.28) 50%,
+      rgba(255,255,255,0) 100%);
+    transform:translateX(-120%) rotate(8deg);
+    will-change:transform;   /* власний шар на GPU: інакше кожен кадр переливу перемальовував би картку */
+    animation:alertSheen 3.6s linear infinite;
+  }
+  /* Шар 2 — внутрішнє свічення, що пульсує (всередині, бо картка з overflow:hidden). */
+  .status-card.alert-on::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:radial-gradient(ellipse at 50% 120%, rgba(255,180,180,0.45), rgba(255,180,180,0) 62%);
+    will-change:opacity;
+    animation:alertPulse 2.4s ease-in-out infinite;
+  }
+  /* Вміст картки має лежати НАД обома шарами. */
+  .status-card.alert-on > *{position:relative;z-index:1;}
+  @keyframes alertSheen{
+    0%  {transform:translateX(-120%) rotate(8deg);}
+    100%{transform:translateX(320%)  rotate(8deg);}
+  }
+  @keyframes alertPulse{
+    0%,100%{opacity:0.35;}
+    50%    {opacity:1;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .status-card.alert-on::before{animation:none;opacity:0;}
+    .status-card.alert-on::after{animation:none;opacity:0.6;}
+  }
+  /* Увесь текст на червоному — світлий. Перекриваємо кожен елемент картки:
+     їхні власні кольори (зелений/бурштиновий/сірий) на такому фоні нечитабельні. */
+  .status-card.alert-on .state-label,
+  .status-card.alert-on .lesson-name,
+  .status-card.alert-on .timer,
+  .status-card.alert-on .alert-banner{color:#fff;}
+  .status-card.alert-on .timer-caption,
+  .status-card.alert-on .next-info{color:rgba(255,255,255,0.85);}
+  .status-card.alert-on .next-info{border-top-color:rgba(255,255,255,0.28);}
+  .status-card.alert-on .next-info b{color:#fff;}
+  .status-card.alert-on .progress-track{background:rgba(0,0,0,0.25);}
+  .status-card.alert-on .progress-fill{background:#fff;}
+  .status-card.alert-on .progress-pct{color:rgba(255,255,255,0.85);}
+  .alert-banner{
+    display:block;
+    width:100%;
+    border:none;
+    background:none;
+    font-family:inherit;
+    font-size:26px;
+    font-weight:800;
+    color:#b91c1c;
+    letter-spacing:.5px;
+    margin:0 0 4px;
+    padding:0;
+    cursor:pointer;
+    text-align:center;
+    text-shadow:0 2px 10px rgba(0,0,0,0.35);
+  }
+  /* Обов'язково: display:block вище перебиває вбудоване [hidden]{display:none}
+     браузера, і без цього рядка банер тривоги висів би на картці завжди. */
+  .alert-banner[hidden]{display:none;}
+  .alert-banner:hover,
+  .alert-banner:focus-visible{text-decoration:underline;}
+  .alert-banner-sub{
+    font-size:12px;
+    font-weight:600;
+    color:rgba(255,255,255,0.8);
+    margin-bottom:12px;
+  }
+  .state-label.alert{color:#b91c1c;}
+  .state-label.silence{color:#475569;}
+  .timer.alert{color:#dc2626;}
+  .timer.silence{color:#475569;}
+  /* урок навмисно лишається видимим, просто відступає на другий план */
+  .status-card.alert-on .lesson-name,
+  .status-card.silence .lesson-name{
+    font-size:18px;
+    opacity:.75;
+    min-height:24px;
+    margin-bottom:10px;
+  }
+  /* попередження, коли сервіс тривог не відповідає */
+  .alerts-offline{
+    background:rgba(251,191,36,0.12);
+    border:1px solid rgba(251,191,36,0.45);
+    color:var(--legend-text);
+    border-radius:12px;
+    padding:10px 14px;
+    font-size:13px;
+    margin-bottom:16px;
+  }
+  .alerts-offline[hidden]{display:none;}
+  /* блок атрибуції NEPTUN — обов'язковий за умовами API (§3, §5),
+     прибирати чи ховати його не можна */
+  .alerts-credit{
+    font-size:12px;
+    opacity:.8;
+    margin:-4px 0 4px;
+    padding-bottom:9px;
+    border-bottom:1px solid var(--panel-border);
+    line-height:1.5;
+  }
+  .alerts-credit[hidden]{display:none;}
+  .alerts-credit a{color:inherit;}
+
+  /* ---------- модалка з картою тривог ---------- */
+  .map-modal{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,0.75);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    z-index:50;
+  }
+  .map-modal[hidden]{display:none;}
+  .map-modal-box{
+    background:var(--panel-bg);
+    color:var(--panel-text);
+    border-radius:16px;
+    width:100%;
+    max-width:680px;
+    max-height:92vh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,0.5);
+  }
+  .map-modal-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 16px;
+    font-weight:700;
+    font-size:15px;
+  }
+  .map-modal-close{
+    border:none;
+    background:none;
+    color:inherit;
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
+    padding:4px 8px;
+  }
+  .map-modal-frame{
+    flex:1;
+    min-height:340px;
+    border:0;
+    width:100%;
+    background:#0f172a;
+  }
+  .map-modal-foot{
+    padding:12px 16px;
+    font-size:12px;
+    line-height:1.6;
+    opacity:.85;
+  }
+  .map-modal-foot a{color:inherit;}
+
   /* ---------- перемикач вигляду ---------- */
   .view-toggle{
     display:flex;
@@ -586,9 +787,52 @@
         <span class="slider"></span>
       </label>
     </div>
+    <div class="setting-row">
+      <span>Хвилина мовчання о 9:00</span>
+      <label class="switch">
+        <input type="checkbox" id="toggleSilence" aria-label="Хвилина мовчання о 9:00">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span>Повітряні тривоги</span>
+      <label class="switch">
+        <input type="checkbox" id="toggleAlerts" aria-label="Інтеграція з сервісом повітряних тривог">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span>Регіон</span>
+      <select class="schedule-select" id="alertRegionSelect" aria-label="Регіон для повітряних тривог" disabled></select>
+    </div>
+    <div class="setting-row">
+      <span>Перевіряти кожні</span>
+      <select class="schedule-select" id="alertIntervalSelect" aria-label="Інтервал перевірки тривог" disabled>
+        <option value="10">10 секунд</option>
+        <option value="15">15 секунд</option>
+        <option value="30">30 секунд</option>
+        <option value="60">1 хвилину</option>
+        <option value="120">2 хвилини</option>
+        <option value="300">5 хвилин</option>
+      </select>
+    </div>
+    <div class="setting-hint" id="alertsHint">&nbsp;</div>
+    <!-- Атрибуція NEPTUN обов'язкова за умовами їхнього API (§3 «Обов'язкова
+         атрибуція» і §5 «Не заміна офіційних тривог»). Не прибирати. -->
+    <div class="alerts-credit" id="alertsCredit" hidden>
+      Дані: <a href="https://neptun.in.ua/" target="_blank" rel="noopener">Карта повітряних тривог — NEPTUN</a>.
+      Це інформаційний агрегатор, а не офіційна система оповіщення — завжди орієнтуйтесь
+      на офіційні сигнали тривоги (<a href="https://t.me/air_alert_ua" target="_blank" rel="noopener">@air_alert_ua</a>).
+    </div>
+  </div>
+
+  <div class="alerts-offline" id="alertsOffline" hidden>
+    ⚠️ Сервіс повітряних тривог тимчасово недоступний. Розклад працює як звичайно.
   </div>
 
   <div class="status-card" id="statusCard">
+    <button type="button" class="alert-banner" id="alertBanner" hidden>🚨 Повітряна тривога</button>
+    <div class="alert-banner-sub" id="alertBannerSub" hidden>натисни, щоб побачити карту</div>
     <div class="state-label" id="stateLabel">—</div>
     <div class="lesson-name" id="lessonName">—</div>
     <div class="timer neutral" id="timer">--:--</div>
@@ -650,6 +894,23 @@
   </div>
 
   <div class="footer" id="scheduleFooter">час визначається за годинником пристрою</div>
+</div>
+
+<!-- Карта тривог. src підставляється тільки при відкритті — щоб згорнута модалка
+     не тримала з'єднання й не вантажила чужий сервіс намарно. -->
+<div class="map-modal" id="mapModal" hidden role="dialog" aria-modal="true" aria-label="Карта повітряних тривог">
+  <div class="map-modal-box">
+    <div class="map-modal-head">
+      <span>Карта повітряних тривог</span>
+      <button type="button" class="map-modal-close" id="mapModalClose" aria-label="Закрити">×</button>
+    </div>
+    <iframe class="map-modal-frame" id="mapModalFrame" title="Карта повітряних тривог України — NEPTUN" loading="lazy"></iframe>
+    <div class="map-modal-foot">
+      Дані: <a href="https://neptun.in.ua/" target="_blank" rel="noopener">Карта повітряних тривог — NEPTUN</a>.<br>
+      Не є офіційною системою оповіщення. Офіційні сигнали —
+      <a href="https://t.me/air_alert_ua" target="_blank" rel="noopener">@air_alert_ua</a>.
+    </div>
+  </div>
 </div>
 
 <script>
@@ -755,7 +1016,13 @@ function colorForSubject(name){
 }
 
 /* ==================== НАЛАШТУВАННЯ КОРИСТУВАЧА ==================== */
-const DEFAULT_SETTINGS = { theme:'auto', subjectColors:false, progressBar:false, sound:true, scheduleId:null };
+const DEFAULT_SETTINGS = {
+  theme:'auto', subjectColors:false, progressBar:false, sound:true, scheduleId:null,
+  silenceMinute:true,                 // хвилина мовчання о 9:00 — за замовчуванням увімкнена
+  alerts:false,                       // інтеграція з сервісом тривог — вимкнена, вмикає користувач
+  alertRegion:'м. київ',              // ключ регіону в API NEPTUN (нижній регістр!)
+  alertInterval:30                    // секунди між перевірками
+};
 let settings = Object.assign({}, DEFAULT_SETTINGS, loadSettings());
 
 function loadSettings(){
@@ -802,10 +1069,16 @@ document.getElementById('toggleSound').addEventListener('change', (e)=>{
   saveSettings();
   if(e.target.checked) unlockAudio(); // розблокувати AudioContext по жесту користувача
 });
+document.getElementById('toggleSilence').addEventListener('change', (e)=>{
+  settings.silenceMinute = e.target.checked;
+  saveSettings();
+  refreshStatusCard(); // не чекати наступного тіку, якщо зараз якраз 9:00
+});
 
 document.getElementById('toggleColors').checked = settings.subjectColors;
 document.getElementById('toggleProgress').checked = settings.progressBar;
 document.getElementById('toggleSound').checked = settings.sound;
+document.getElementById('toggleSilence').checked = settings.silenceMinute;
 applyTheme();
 
 /* ==================== ЗВУК + ВІБРО ==================== */
@@ -840,6 +1113,290 @@ function playBeep(){
   }catch(e){}
   if(navigator.vibrate) navigator.vibrate([200,80,200]);
 }
+
+/* ==================== ПОВІТРЯНІ ТРИВОГИ (NEPTUN) ====================
+   Джерело: https://neptun.in.ua/api/v1/alerts — відкритий REST, без ключів,
+   з CORS `*`, тому статична сторінка може ходити туди напряму.
+   (Ubilling API для цього не годиться: він взагалі не віддає CORS-заголовків,
+   і браузер не дає прочитати відповідь без власного серверного реле.)
+
+   Умови NEPTUN, які видно в UI і які не можна прибирати:
+     §3 — видиме посилання на джерело поруч із даними (#alertsCredit, футер модалки);
+     §4 — опитувати не частіше ніж раз на 5 секунд (наш мінімум — 10 с);
+     §5 — прямо казати, що це не офіційна система оповіщення.
+
+   Головне правило модуля: він ніколи не має права зламати розклад. Будь-яка
+   помилка мережі/парсингу гаситься всередині, стан просто лишається «тривоги немає».
+                                                                                  */
+const ALERTS_URL = 'https://neptun.in.ua/api/v1/alerts';
+const ALERTS_TIMEOUT_MS = 8000;
+const ALERTS_MAX_BACKOFF_MS = 5 * 60 * 1000;
+const ALERTS_STALE_MS = 5 * 60 * 1000;   // після цього показуємо «сервіс недоступний»
+/* Стан тривоги свідомо НЕ кешується в localStorage. Розклад кешувати корисно —
+   він за ніч не змінюється; стан тривоги ж застаріває за секунди, і показати
+   збережене «тривога» після відбою (чи «тривог немає» під час тривоги) гірше,
+   ніж не показати нічого. При старті все одно робиться негайна перевірка. */
+
+/* Повний перелік регіонів — ключі API NEPTUN (нижній регістр) і людські назви.
+   Зашито навмисне: окремого ендпоінта зі списком у них немає, а oblasts.geojson
+   важить ~161 КБ — качати його заради 27 рядків не варто.
+   Увага: 'м. київ' і 'київська' — РІЗНІ регіони, не зливати. */
+const ALERT_REGIONS = [
+  ['м. київ', 'м. Київ'],
+  ['київська', 'Київська область'],
+  ['вінницька', 'Вінницька область'],
+  ['волинська', 'Волинська область'],
+  ['дніпропетровська', 'Дніпропетровська область'],
+  ['донецька', 'Донецька область'],
+  ['житомирська', 'Житомирська область'],
+  ['закарпатська', 'Закарпатська область'],
+  ['запорізька', 'Запорізька область'],
+  ['івано-франківська', 'Івано-Франківська область'],
+  ['кіровоградська', 'Кіровоградська область'],
+  ['луганська', 'Луганська область'],
+  ['львівська', 'Львівська область'],
+  ['миколаївська', 'Миколаївська область'],
+  ['одеська', 'Одеська область'],
+  ['полтавська', 'Полтавська область'],
+  ['рівненська', 'Рівненська область'],
+  ['сумська', 'Сумська область'],
+  ['тернопільська', 'Тернопільська область'],
+  ['харківська', 'Харківська область'],
+  ['херсонська', 'Херсонська область'],
+  ['хмельницька', 'Хмельницька область'],
+  ['черкаська', 'Черкаська область'],
+  ['чернівецька', 'Чернівецька область'],
+  ['чернігівська', 'Чернігівська область'],
+  ['автономна республіка крим', 'Автономна Республіка Крим'],
+  ['севастополь', 'Севастополь']
+];
+
+let alertState = { active:false, where:'', label:'', okAt:0, checkedAt:0 };
+let alertsTimer = null;
+let alertsFailures = 0;
+
+/* Перемалювати статус-картку поза звичайним тіком годинника.
+   Захист від гонки: перша перевірка тривог може відповісти раніше, ніж
+   завантажився розклад — тоді таблиці ще немає і update() намалював би
+   порожню картку «Вихідний». Годинник стартує сам, коли розклад приїде. */
+function refreshStatusCard(){
+  if(clockStarted) update();
+}
+
+/* Українська форма числівника: 1 район, 2-4 райони, 5+ районів
+   (з винятком на 11-14, де завжди «районів»). */
+function plural(n, one, few, many){
+  const mod10 = n % 10, mod100 = n % 100;
+  if(mod100 >= 11 && mod100 <= 14) return many;
+  if(mod10 === 1) return one;
+  if(mod10 >= 2 && mod10 <= 4) return few;
+  return many;
+}
+
+function regionName(key){
+  const found = ALERT_REGIONS.find(r => r[0] === key);
+  return found ? found[1] : key;
+}
+
+/* Регіон під тривогою, якщо або оголошено по всій області, або тривога хоч в
+   одному з її районів. Обидві гілки потрібні: API розводить ці випадки, а для
+   користувача «тривога в моїй області» — це і те, і те.
+   Чиста функція без побічних ефектів — її жганяють тести в Node. */
+function regionAlerted(data, key){
+  if(!data || typeof data !== 'object') return null;
+  const name = regionName(key);
+  const oblasts = Array.isArray(data.oblasts) ? data.oblasts : [];
+  const raions  = Array.isArray(data.raions)  ? data.raions  : [];
+
+  // where — сам регіон, без слова «тривога»: на картці над ним уже стоїть
+  // великий банер «Повітряна тривога», і дублювати його в рядку нижче не треба.
+  // label — повний рядок для підказки в налаштуваннях, де контексту немає.
+  const whole = oblasts.find(o => o && o.key === key);
+  if(whole){
+    const where = whole.name || name;
+    return { active:true, where:where, label:'Тривога: ' + where };
+  }
+
+  const hit = raions.filter(r => r && r.oblast === name);
+  if(hit.length){
+    const detail = hit.length === 1 ? hit[0].name : (hit.length + ' ' + plural(hit.length, 'район', 'райони', 'районів'));
+    const where = name + ' (' + detail + ')';
+    return { active:true, where:where, label:'Тривога: ' + where };
+  }
+  return { active:false, where:name, label:'Тривог немає: ' + name };
+}
+
+function fetchAlerts(){
+  // Власний таймаут обов'язковий: fetch без нього може висіти хвилинами,
+  // і планувальник не перезапуститься.
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ALERTS_TIMEOUT_MS);
+  return fetch(ALERTS_URL, { cache:'no-store', signal: ctrl.signal })
+    .then(res => {
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .finally(() => clearTimeout(t));
+}
+
+function renderAlertsHint(){
+  const hint = document.getElementById('alertsHint');
+  const offline = document.getElementById('alertsOffline');
+  if(!settings.alerts){
+    hint.textContent = 'Вимкнено — розклад працює як завжди';
+    hint.classList.remove('warn');
+    offline.hidden = true;
+    return;
+  }
+  // Перша перевірка ще в дорозі — це не помилка, і лякати нею не треба.
+  if(!alertState.okAt && !alertsFailures){
+    hint.textContent = 'Перевіряю…';
+    hint.classList.remove('warn');
+    offline.hidden = true;
+    return;
+  }
+  const stale = !alertState.okAt || (Date.now() - alertState.okAt) > ALERTS_STALE_MS;
+  if(stale){
+    hint.textContent = 'Сервіс тривог не відповідає';
+    hint.classList.add('warn');
+    offline.hidden = false;
+    return;
+  }
+  const time = new Date(alertState.okAt).toTimeString().slice(0,5);
+  hint.textContent = (alertState.active ? '🚨 ' : '') + alertState.label + ' · ' + time;
+  hint.classList.toggle('warn', alertState.active);
+  offline.hidden = true;
+}
+
+function checkAlerts(){
+  if(!settings.alerts) return Promise.resolve();
+  return fetchAlerts()
+    .then(data => {
+      const res = regionAlerted(data, settings.alertRegion);
+      if(!res) throw new Error('bad payload');
+      alertState.active = res.active;
+      alertState.where = res.where;
+      alertState.label = res.label;
+      alertState.okAt = Date.now();
+      alertsFailures = 0;
+    })
+    .catch(() => {
+      // Мовчки. Помилка сервісу тривог не має ставати помилкою розкладу —
+      // видно її лише як рядок «сервіс не відповідає».
+      alertsFailures++;
+      // Зів'ялий стан не тримаємо червоним: краще нічого, ніж брехня.
+      if(Date.now() - alertState.okAt > ALERTS_STALE_MS) alertState.active = false;
+    })
+    .then(() => {
+      alertState.checkedAt = Date.now();
+      renderAlertsHint();
+      refreshStatusCard(); // одразу перемалювати картку, не чекати наступної секунди
+    });
+}
+
+function scheduleAlertsCheck(){
+  clearTimeout(alertsTimer);
+  if(!settings.alerts) return;
+  // Експоненційний бекоф на помилках — щоб не довбати чужий сервіс, коли він лежить
+  // (умова §4 «чесне навантаження»), і щоб не жерти батарею в офлайні.
+  const base = Math.max(10, Number(settings.alertInterval) || 30) * 1000;
+  const delay = alertsFailures
+    ? Math.min(base * Math.pow(2, alertsFailures), ALERTS_MAX_BACKOFF_MS)
+    : base;
+  alertsTimer = setTimeout(() => {
+    checkAlerts().then(scheduleAlertsCheck);
+  }, delay);
+}
+
+function startAlerts(){
+  clearTimeout(alertsTimer);
+  if(!settings.alerts) return;
+  checkAlerts().then(scheduleAlertsCheck); // перевірка одразу при вмиканні
+}
+
+function stopAlerts(){
+  clearTimeout(alertsTimer);
+  alertsTimer = null;
+  alertsFailures = 0;
+  alertState = { active:false, where:'', label:'', okAt:0, checkedAt:0 };
+  renderAlertsHint();
+  refreshStatusCard();
+}
+
+function applyAlertsToggle(){
+  document.getElementById('alertRegionSelect').disabled = !settings.alerts;
+  document.getElementById('alertIntervalSelect').disabled = !settings.alerts;
+  document.getElementById('alertsCredit').hidden = !settings.alerts;
+  renderAlertsHint();
+}
+
+function renderAlertRegionSelect(){
+  const sel = document.getElementById('alertRegionSelect');
+  sel.innerHTML = ALERT_REGIONS
+    .map(r => '<option value="'+esc(r[0])+'">'+esc(r[1])+'</option>')
+    .join('');
+  sel.value = settings.alertRegion;
+  if(!sel.value){ // збережений регіон зник зі списку — відкат на Київ
+    settings.alertRegion = DEFAULT_SETTINGS.alertRegion;
+    sel.value = settings.alertRegion;
+    saveSettings();
+  }
+}
+
+/* ---- карта тривог у модалці ---- */
+function openMapModal(){
+  const modal = document.getElementById('mapModal');
+  const frame = document.getElementById('mapModalFrame');
+  // src ставимо лише зараз: інакше карта вантажилась би на кожному відкритті сторінки
+  if(!frame.getAttribute('src')) frame.setAttribute('src', 'https://neptun.in.ua/embed/map');
+  modal.hidden = false;
+}
+function closeMapModal(){
+  document.getElementById('mapModal').hidden = true;
+}
+
+/* ---- підписки ---- */
+document.getElementById('toggleAlerts').addEventListener('change', (e)=>{
+  settings.alerts = e.target.checked;
+  saveSettings();
+  applyAlertsToggle();
+  if(settings.alerts) startAlerts(); else stopAlerts();
+});
+document.getElementById('alertRegionSelect').addEventListener('change', (e)=>{
+  settings.alertRegion = e.target.value;
+  saveSettings();
+  alertState.active = false;   // стан старого регіону більше не діє
+  alertState.okAt = 0;
+  alertsFailures = 0;
+  startAlerts();               // і одразу перевірити новий
+});
+document.getElementById('alertIntervalSelect').addEventListener('change', (e)=>{
+  settings.alertInterval = Number(e.target.value) || DEFAULT_SETTINGS.alertInterval;
+  saveSettings();
+  scheduleAlertsCheck();
+});
+document.getElementById('alertBanner').addEventListener('click', openMapModal);
+document.getElementById('mapModalClose').addEventListener('click', closeMapModal);
+document.getElementById('mapModal').addEventListener('click', (e)=>{
+  if(e.target.id === 'mapModal') closeMapModal();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') closeMapModal();
+});
+
+// У фоні не опитуємо взагалі, при поверненні — одразу свіжа перевірка.
+// Це і батарея, і чесне навантаження на чужий сервіс.
+document.addEventListener('visibilitychange', ()=>{
+  if(!settings.alerts) return;
+  if(document.visibilityState === 'visible') startAlerts();
+  else clearTimeout(alertsTimer);
+});
+
+renderAlertRegionSelect();
+document.getElementById('alertIntervalSelect').value = String(settings.alertInterval);
+document.getElementById('toggleAlerts').checked = settings.alerts;
+applyAlertsToggle();
+if(settings.alerts) startAlerts(); // інтеграція лишалась увімкненою з минулого разу
 
 /* ==================== НОТАТКИ (localStorage) ====================
    Ключ прив'язаний до розкладу: у 7-Б і 8-А свої нотатки, навіть якщо
@@ -991,6 +1548,17 @@ function fmtClock(totalSeconds){
 
 let lastPhaseKey = null;
 
+/* Хвилина мовчання — щодня о 9:00 рівно одну хвилину. У таблицю уроків не
+   потрапляє навмисне: це не урок, а загальнодержавна хвилина, і показувати її
+   треба однаково у вихідний, на канікулах і посеред уроку. */
+const SILENCE_START = 9 * 3600;
+const SILENCE_LEN = 60;
+function isSilenceMinute(nowSeconds){
+  return !!settings.silenceMinute
+      && nowSeconds >= SILENCE_START
+      && nowSeconds < SILENCE_START + SILENCE_LEN;
+}
+
 function update(){
   const now = new Date();
   const jsDay = now.getDay();          // 0=нд..6=сб
@@ -1032,8 +1600,18 @@ function update(){
     progressPct.textContent = Math.round(pct)+'%';
   }
 
-  // ---- канікули / свято ----
+  // Гілки нижче раніше робили ранній return. Тепер усі сходяться в один хвіст
+  // функції: тривога й хвилина мовчання накладаються поверх БУДЬ-ЯКОГО стану
+  // (урок, перерва, вихідний, канікули), тож декорація має бути одна на всіх,
+  // а не продубльована в кожній гілці.
+  let matchedIdx = -1;
+  let nextIdx = -1;
+  let phaseKey;
+  let todayDow = dow;
+
   const holiday = findHoliday(now);
+
+  // ---- канікули / свято ----
   if(holiday){
     card.classList.add('holiday');
     stateLabel.className = 'state-label holiday';
@@ -1044,12 +1622,10 @@ function update(){
     timerCaption.innerHTML = '&nbsp;';
     nextInfo.innerHTML = 'Уроків немає до ' + holiday.end;
     themeColorMeta.setAttribute('content', '#4338ca');
-    renderTodayView(-1, rows, -1, -1);
-    lastPhaseKey = 'holiday';
-    return;
-  }
+    todayDow = -1;
+    phaseKey = 'holiday';
 
-  if(dayCols[dow] === undefined){
+  } else if(dayCols[dow] === undefined){
     card.classList.add('weekend');
     stateLabel.className = 'state-label weekend';
     stateLabel.textContent = 'Вихідний';
@@ -1059,16 +1635,12 @@ function update(){
     timerCaption.innerHTML = '&nbsp;';
     nextInfo.innerHTML = 'Наступний навчальний день — ' + nextSchoolDayLabel(dow);
     themeColorMeta.setAttribute('content', '#64748b');
-    renderTodayView(dow, rows, -1, -1);
-    lastPhaseKey = 'weekend';
-    return;
-  }
+    phaseKey = 'weekend';
 
+  } else {
   const todayHeader = document.querySelector('#schedule th[data-day="'+dow+'"]');
   todayHeader && todayHeader.classList.add('current-day');
 
-  let matchedIdx = -1;
-  let nextIdx = -1;
   rows.forEach((tr, i) => {
     const start = toMinutes(tr.dataset.start);
     const end = toMinutes(tr.dataset.end);
@@ -1078,8 +1650,6 @@ function update(){
     const todayCell = tr.children[dayCols[dow]];
     if(end <= nowMinutes && todayCell) todayCell.classList.add('past-cell');
   });
-
-  let phaseKey;
 
   if(matchedIdx !== -1){
     // йде урок
@@ -1163,14 +1733,58 @@ function update(){
     themeColorMeta.setAttribute('content', '#64748b');
     phaseKey = 'done-'+dow;
   }
+  } // кінець звичайного навчального дня
 
+  /* ---- спільний хвіст: накладки поверх будь-якого стану ----
+     Порядок навмисний. Хвилина мовчання переписує заголовок і таймер, а тривога
+     йде наступною і перекриває заголовок собою — за рішенням: тривога важливіша,
+     але хвилина мовчання при цьому не зникає, а з'їжджає в рядок нижче.
+
+     Накладки НЕ чіпають phaseKey: він лишається ключем уроку/перерви й керує
+     тільки дзвінком. Інакше вихід із хвилини мовчання о 09:01 виглядав би для
+     нього як зміна фази — і одразу після хвилини мовчання лунав би біп. */
+
+  const banner = document.getElementById('alertBanner');
+  const bannerSub = document.getElementById('alertBannerSub');
+  const silence = isSilenceMinute(nowSeconds);
+
+  if(silence){
+    // lessonName не чіпаємо: там уже стоїть назва уроку (або «Вихідний»/назва
+    // канікул) — саме її і треба лишити другим рядком, тільки дрібнішим.
+    card.classList.add('silence');
+    card.classList.remove('progress-mode'); // прогрес-бар уроку тут ні до чого
+    stateLabel.className = 'state-label silence';
+    stateLabel.textContent = 'Хвилина мовчання';
+    timer.className = 'timer silence';
+    timer.textContent = fmtClock(SILENCE_START + SILENCE_LEN - nowSeconds);
+    timerCaption.textContent = 'вшановуємо пам’ять загиблих';
+    themeColorMeta.setAttribute('content', '#475569');
+  }
+
+  const alertOn = settings.alerts && alertState.active;
+  banner.hidden = !alertOn;
+  bannerSub.hidden = !alertOn;
+  if(alertOn){
+    card.classList.add('alert-on');
+    // Заголовок стану віддаємо тривозі, а те, що було в ньому (урок / «Хвилина
+    // мовчання» / «Вихідний»), лишається читабельним рядком нижче.
+    const under = silence ? 'Хвилина мовчання' : (lessonName.textContent || stateLabel.textContent);
+    stateLabel.className = 'state-label alert';
+    stateLabel.textContent = alertState.where || 'Повітряна тривога';
+    lessonName.textContent = under;
+    if(timer.textContent !== '—') timer.className = 'timer alert';
+    themeColorMeta.setAttribute('content', '#dc2626');
+  }
+
+  // Біп лише на межі урок↔перерва. Під час хвилини мовчання — тиша, це очевидно;
+  // окремої сирени на тривогу теж не робимо, справжня вже прозвучала.
   if(lastPhaseKey !== null && phaseKey !== lastPhaseKey &&
      (phaseKey.startsWith('lesson-') || phaseKey.startsWith('break-'))){
     playBeep();
   }
   lastPhaseKey = phaseKey;
 
-  renderTodayView(dow, rows, matchedIdx, nextIdx, nowMinutes);
+  renderTodayView(todayDow, rows, matchedIdx, nextIdx, nowMinutes);
 }
 
 /* ==================== ЗАВАНТАЖЕННЯ РОЗКЛАДУ ====================

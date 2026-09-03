@@ -41,6 +41,11 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
+  // Чужі origin'и (API повітряних тривог, карта) віддаємо браузеру як є.
+  // Інакше вони впали б у cache-first гілку нижче й стан тривоги назавжди
+  // залишився б таким, яким його побачили вперше — відбою користувач не дочекався б.
+  if (new URL(req.url).origin !== self.location.origin) return;
+
   if (req.mode === 'navigate' || req.url.endsWith('index.html') || isScheduleJson(req.url)) {
     event.respondWith(
       fetch(req, { cache: 'no-store' })
