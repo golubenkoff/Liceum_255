@@ -11,56 +11,110 @@
 <style>
   *{box-sizing:border-box;}
 
-  /* ---------- тема (світла/темна) ---------- */
+  /* ---------- тема (світла/темна) — glass violet/pink ---------- */
   :root{
-    --body-grad-1:#0f172a;
-    --body-grad-2:#1e1b4b;
-    --h1-color:#f8fafc;
-    --sub-color:#94a3b8;
+    --body-grad-1:#1b1130;
+    --body-grad-2:#241a4d;
+    --body-grad-3:#150e28;
+    --h1-color:#f5f3ff;
+    --sub-color:#b3a9d9;
     --legend-bg:rgba(255,255,255,0.06);
     --legend-text:#cbd5e1;
-    --footer-color:#94a3b8;
-    --panel-bg:#ffffff;
-    --panel-text:#1e293b;
-    --panel-border:#e2e8f0;
+    --footer-color:#7a6fa0;
+    --panel-bg:rgba(36,26,72,0.55);
+    --panel-text:#f5f3ff;
+    --panel-border:rgba(255,255,255,0.14);
+    --card-bg:rgba(255,255,255,0.06);
+    --card-border:rgba(255,255,255,0.13);
+    --input-bg:rgba(255,255,255,0.08);
+    --accent:#ec4899;
+    --accent-2:#a21caf;
+    --table-border:rgba(255,255,255,0.09);
+    --table-text:#e2ddf5;
+    --table-head-text:#e9e4ff;
+    /* Колір тексту в підсвічених клітинках таблиці (зелена/жовта заливка
+       напівпрозора, тож поверх темного тла потрібен світлий текст, а поверх
+       світлого — темний; інакше літери зникають). */
+    --hl-text:#ffffff;
   }
   @media (prefers-color-scheme: light){
     :root:not([data-theme]){
-      --body-grad-1:#e0f2fe;
-      --body-grad-2:#f8fafc;
-      --h1-color:#0f172a;
-      --sub-color:#475569;
-      --legend-bg:rgba(15,23,42,0.05);
-      --legend-text:#334155;
-      --footer-color:#64748b;
+      --body-grad-1:#f3e8ff;
+      --body-grad-2:#eef1ff;
+      --body-grad-3:#ffffff;
+      --h1-color:#241a4d;
+      --sub-color:#6d5b9e;
+      --legend-bg:rgba(36,26,72,0.05);
+      --legend-text:#4b3f73;
+      --footer-color:#8f84b8;
+      --panel-bg:rgba(255,255,255,0.65);
+      --panel-text:#241a4d;
+      --panel-border:rgba(36,26,72,0.12);
+      --card-bg:rgba(255,255,255,0.55);
+      --card-border:rgba(36,26,72,0.1);
+      --input-bg:rgba(36,26,72,0.06);
+      --table-border:rgba(36,26,72,0.08);
+      --table-text:#2f2456;
+      --table-head-text:#241a4d;
+      --hl-text:#2a1e06;
     }
   }
   html[data-theme="light"]{
-    --body-grad-1:#e0f2fe;
-    --body-grad-2:#f8fafc;
-    --h1-color:#0f172a;
-    --sub-color:#475569;
-    --legend-bg:rgba(15,23,42,0.05);
-    --legend-text:#334155;
-    --footer-color:#64748b;
+    --body-grad-1:#f3e8ff;
+    --body-grad-2:#eef1ff;
+    --body-grad-3:#ffffff;
+    --h1-color:#241a4d;
+    --sub-color:#6d5b9e;
+    --legend-bg:rgba(36,26,72,0.05);
+    --legend-text:#4b3f73;
+    --footer-color:#8f84b8;
+    --panel-bg:rgba(255,255,255,0.65);
+    --panel-text:#241a4d;
+    --panel-border:rgba(36,26,72,0.12);
+    --card-bg:rgba(255,255,255,0.55);
+    --card-border:rgba(36,26,72,0.1);
+    --input-bg:rgba(36,26,72,0.06);
+    --table-border:rgba(36,26,72,0.08);
+    --table-text:#2f2456;
+    --table-head-text:#241a4d;
+    --hl-text:#2a1e06;
   }
   html[data-theme="dark"]{
-    --body-grad-1:#0f172a;
-    --body-grad-2:#1e1b4b;
-    --h1-color:#f8fafc;
-    --sub-color:#94a3b8;
+    --body-grad-1:#1b1130;
+    --body-grad-2:#241a4d;
+    --body-grad-3:#150e28;
+    --h1-color:#f5f3ff;
+    --sub-color:#b3a9d9;
     --legend-bg:rgba(255,255,255,0.06);
     --legend-text:#cbd5e1;
-    --footer-color:#94a3b8;
+    --footer-color:#7a6fa0;
+    --panel-bg:rgba(36,26,72,0.55);
+    --panel-text:#f5f3ff;
+    --panel-border:rgba(255,255,255,0.14);
+    --card-bg:rgba(255,255,255,0.06);
+    --card-border:rgba(255,255,255,0.13);
+    --input-bg:rgba(255,255,255,0.08);
+    --table-border:rgba(255,255,255,0.09);
+    --table-text:#e2ddf5;
+    --table-head-text:#e9e4ff;
+    /* Колір тексту в підсвічених клітинках таблиці (зелена/жовта заливка
+       напівпрозора, тож поверх темного тла потрібен світлий текст, а поверх
+       світлого — темний; інакше літери зникають). */
+    --hl-text:#ffffff;
   }
 
   body{
-    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    /* Тільки системні шрифти — нічого не завантажується.
+       system-ui бере рідний шрифт платформи: SF Pro на iPhone/Mac,
+       Segoe UI Variable на Windows, Roboto на Android. Усі вони мають
+       кирилицю, тож український текст виглядає природно скрізь, сторінка
+       відкривається миттєво й однаково працює без інтернету. */
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin:0;
     padding:32px 16px;
     display:flex;
     justify-content:center;
-    background:linear-gradient(135deg,var(--body-grad-1),var(--body-grad-2));
+    background:radial-gradient(circle at 18% 0%, rgba(236,72,153,0.16), transparent 45%), linear-gradient(165deg,var(--body-grad-1) 0%,var(--body-grad-2) 48%,var(--body-grad-3) 100%);
     min-height:100vh;
   }
   .wrap{max-width:900px;width:100%;}
@@ -76,6 +130,8 @@
     text-align:center;
     margin:0 0 4px;
     font-size:28px;
+    font-weight:700;
+    letter-spacing:-0.3px;
     color:var(--h1-color);
   }
   p.sub{
@@ -90,8 +146,9 @@
     top:0;
     background:var(--legend-bg);
     border:1px solid var(--panel-border);
+    backdrop-filter:blur(14px);
     color:var(--h1-color);
-    border-radius:10px;
+    border-radius:14px;
     width:38px;
     height:38px;
     font-size:18px;
@@ -104,7 +161,9 @@
   .settings-panel{
     background:var(--panel-bg);
     color:var(--panel-text);
-    border-radius:16px;
+    border:1px solid var(--panel-border);
+    backdrop-filter:blur(20px) saturate(140%);
+    border-radius:20px;
     padding:18px 20px;
     margin:0 0 20px;
     box-shadow:0 20px 50px rgba(0,0,0,0.35);
@@ -124,18 +183,19 @@
   .theme-buttons{display:flex;gap:6px;}
   .theme-buttons button{
     border:1px solid var(--panel-border);
-    background:#fff;
-    color:#1e293b;
+    background:var(--input-bg);
+    color:var(--panel-text);
     padding:5px 10px;
     border-radius:8px;
     font-size:12px;
     cursor:pointer;
+    font-family:inherit;
   }
-  .theme-buttons button.active{background:#16a34a;color:#fff;border-color:#16a34a;}
+  .theme-buttons button.active{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent;}
   .schedule-select{
     border:1px solid var(--panel-border);
-    background:#fff;
-    color:#1e293b;
+    background:var(--input-bg);
+    color:var(--panel-text);
     padding:6px 10px;
     border-radius:8px;
     font-size:13px;
@@ -160,7 +220,7 @@
   .switch input{opacity:0;width:0;height:0;}
   .switch .slider{
     position:absolute;inset:0;
-    background:#cbd5e1;
+    background:rgba(255,255,255,0.18);
     border-radius:24px;
     cursor:pointer;
     transition:.2s;
@@ -174,29 +234,36 @@
     border-radius:50%;
     transition:.2s;
   }
-  .switch input:checked + .slider{background:#16a34a;}
+  .switch input:checked + .slider{background:linear-gradient(135deg,var(--accent),var(--accent-2));}
   .switch input:checked + .slider:before{transform:translateX(18px);}
 
   /* ---------- статус-карточка ---------- */
   .status-card{
-    background:#fff;
-    border-radius:20px;
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    backdrop-filter:blur(20px) saturate(150%);
+    border-radius:22px;
     padding:28px 24px;
     text-align:center;
     box-shadow:0 20px 50px rgba(0,0,0,0.4);
     margin-bottom:16px;
+    position:relative;
+    overflow:hidden;
   }
   .status-card.lesson{
-    background:linear-gradient(135deg,#dcfce7,#ffffff);
+    background:linear-gradient(135deg, rgba(52,211,153,0.24), var(--card-bg));
+    border-color:rgba(110,231,183,0.35);
   }
   .status-card.break{
-    background:linear-gradient(135deg,#fef3c7,#ffffff);
+    background:linear-gradient(135deg, rgba(251,191,36,0.22), var(--card-bg));
+    border-color:rgba(253,224,71,0.3);
   }
   .status-card.done, .status-card.weekend, .status-card.before{
-    background:linear-gradient(135deg,#e2e8f0,#ffffff);
+    background:linear-gradient(135deg, rgba(148,163,184,0.18), var(--card-bg));
   }
   .status-card.holiday{
-    background:linear-gradient(135deg,#e0e7ff,#ffffff);
+    background:linear-gradient(135deg, rgba(99,102,241,0.24), var(--card-bg));
+    border-color:rgba(165,180,252,0.3);
   }
   .state-label{
     font-size:14px;
@@ -205,33 +272,37 @@
     letter-spacing:1.5px;
     margin-bottom:10px;
   }
-  .state-label.lesson{color:#166534;}
-  .state-label.break{color:#b45309;}
-  .state-label.done, .state-label.weekend, .state-label.before{color:#475569;}
-  .state-label.holiday{color:#4338ca;}
+  .state-label.lesson{color:#6ee7b7;}
+  .state-label.break{color:#fde047;}
+  .state-label.done, .state-label.weekend, .state-label.before{color:var(--sub-color);}
+  .state-label.holiday{color:#c7d2fe;}
 
   .lesson-name{
     font-size:30px;
     font-weight:700;
-    color:#1e293b;
+    color:var(--h1-color);
     margin:0 0 14px;
     min-height:38px;
   }
 
   .timer{
-    font-size:56px;
-    font-weight:800;
+    /* Системний моноширинний стек: цифри однакової ширини, тому таймер не
+       "стрибає" щосекунди, коли 1 змінюється на 8. Нічого не завантажується —
+       ці шрифти вже є в кожній ОС (SF Mono, Consolas, Roboto Mono). */
+    font-family:ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace;
+    font-size:52px;
+    font-weight:700;
     font-variant-numeric:tabular-nums;
     letter-spacing:2px;
     margin:0 0 6px;
   }
-  .timer.lesson{color:#16a34a;}
-  .timer.break{color:#d97706;}
-  .timer.neutral{color:#64748b;}
+  .timer.lesson{color:#6ee7b7;}
+  .timer.break{color:#fbbf24;}
+  .timer.neutral{color:var(--sub-color);}
 
   .timer-caption{
     font-size:13px;
-    color:#64748b;
+    color:var(--sub-color);
     margin-bottom:18px;
   }
 
@@ -240,7 +311,7 @@
   .status-card.progress-mode .timer-caption{display:none;}
   .status-card.progress-mode .progress-wrap{display:block;}
   .progress-track{
-    background:#e2e8f0;
+    background:rgba(255,255,255,0.14);
     border-radius:999px;
     height:14px;
     overflow:hidden;
@@ -248,48 +319,34 @@
   .progress-fill{
     height:100%;
     width:0%;
-    background:#16a34a;
+    background:#34d399;
     border-radius:999px;
     transition:width 1s linear;
   }
   .timer.break ~ .progress-wrap .progress-fill,
-  .status-card.break .progress-fill{background:#d97706;}
-  .progress-pct{margin-top:6px;font-size:13px;color:#64748b;font-variant-numeric:tabular-nums;}
+  .status-card.break .progress-fill{background:#fbbf24;}
+  .progress-pct{margin-top:6px;font-size:13px;color:var(--sub-color);font-variant-numeric:tabular-nums;}
 
   .next-info{
     font-size:15px;
-    color:#475569;
-    border-top:1px solid #e2e8f0;
+    color:var(--sub-color);
+    border-top:1px solid var(--panel-border);
     padding-top:14px;
   }
-  .next-info b{color:#1e293b;}
+  .next-info b{color:var(--h1-color);}
 
-  /* ---------- повітряна тривога + хвилина мовчання ----------
-     Обидва стани накладаються поверх звичайної картки: класи додаються в update(),
-     який щосекунди скидає card.className, тому вони не «залипають».            */
+  /* ---------- повітряна тривога + хвилина мовчання ---------- */
   .status-card.silence{
-    background:linear-gradient(135deg,#e2e8f0,#ffffff);
-    border:2px solid #94a3b8;
+    background:linear-gradient(135deg, rgba(148,163,184,0.18), var(--card-bg));
+    border:2px solid rgba(148,163,184,0.4);
   }
-  /* Тривога забирає всю картку: насичений червоний фон, білий текст і перелив,
-     що повільно пробігає зліва направо. Це має читатись через кімнату, а не
-     виглядати як ще одне сповіщення.
-     Стоїть НИЖЧЕ .status-card.silence навмисно: специфічність у них однакова,
-     тож виграє те, що оголошено пізніше. О 9:00 під тривогою картка має
-     лишатись червоною, а не сірою. */
   .status-card.alert-on{
     position:relative;
     overflow:hidden;
     background:linear-gradient(135deg,#991b1b 0%,#dc2626 45%,#b91c1c 100%);
-    border:2px solid #7f1d1d;
-    /* Статичне зовнішнє свічення. Не анімоване навмисне: анімований box-shadow
-       змушував би браузер перемальовувати картку 60 разів на секунду — на
-       слабкому телефоні це їсть батарею й підгальмовує таймер. Те, що «дихає»,
-       винесено в окремі шари нижче, де анімується лише opacity/transform,
-       а вони композитяться на GPU. */
+    border:1px solid rgba(248,113,113,0.5);
     box-shadow:0 20px 50px rgba(0,0,0,0.45), 0 0 34px rgba(220,38,38,0.55);
   }
-  /* Шар 1 — перелив: широкий світлий блік, що проїжджає впоперек картки. */
   .status-card.alert-on::before{
     content:'';
     position:absolute;
@@ -304,10 +361,9 @@
       rgba(255,255,255,0.28) 50%,
       rgba(255,255,255,0) 100%);
     transform:translateX(-120%) rotate(8deg);
-    will-change:transform;   /* власний шар на GPU: інакше кожен кадр переливу перемальовував би картку */
+    will-change:transform;
     animation:alertSheen 3.6s linear infinite;
   }
-  /* Шар 2 — внутрішнє свічення, що пульсує (всередині, бо картка з overflow:hidden). */
   .status-card.alert-on::after{
     content:'';
     position:absolute;
@@ -318,7 +374,6 @@
     will-change:opacity;
     animation:alertPulse 2.4s ease-in-out infinite;
   }
-  /* Вміст картки має лежати НАД обома шарами. */
   .status-card.alert-on > *{position:relative;z-index:1;}
   @keyframes alertSheen{
     0%  {transform:translateX(-120%) rotate(8deg);}
@@ -332,8 +387,6 @@
     .status-card.alert-on::before{animation:none;opacity:0;}
     .status-card.alert-on::after{animation:none;opacity:0.6;}
   }
-  /* Увесь текст на червоному — світлий. Перекриваємо кожен елемент картки:
-     їхні власні кольори (зелений/бурштиновий/сірий) на такому фоні нечитабельні. */
   .status-card.alert-on .state-label,
   .status-card.alert-on .lesson-name,
   .status-card.alert-on .timer,
@@ -350,10 +403,9 @@
     width:100%;
     border:none;
     background:none;
-    font-family:inherit;
     font-size:26px;
     font-weight:800;
-    color:#b91c1c;
+    color:#fff;
     letter-spacing:.5px;
     margin:0 0 4px;
     padding:0;
@@ -361,8 +413,6 @@
     text-align:center;
     text-shadow:0 2px 10px rgba(0,0,0,0.35);
   }
-  /* Обов'язково: display:block вище перебиває вбудоване [hidden]{display:none}
-     браузера, і без цього рядка банер тривоги висів би на картці завжди. */
   .alert-banner[hidden]{display:none;}
   .alert-banner:hover,
   .alert-banner:focus-visible{text-decoration:underline;}
@@ -372,11 +422,10 @@
     color:rgba(255,255,255,0.8);
     margin-bottom:12px;
   }
-  .state-label.alert{color:#b91c1c;}
-  .state-label.silence{color:#475569;}
-  .timer.alert{color:#dc2626;}
-  .timer.silence{color:#475569;}
-  /* урок навмисно лишається видимим, просто відступає на другий план */
+  .state-label.alert{color:#fff;}
+  .state-label.silence{color:var(--sub-color);}
+  .timer.alert{color:#fff;}
+  .timer.silence{color:var(--sub-color);}
   .status-card.alert-on .lesson-name,
   .status-card.silence .lesson-name{
     font-size:18px;
@@ -384,7 +433,6 @@
     min-height:24px;
     margin-bottom:10px;
   }
-  /* попередження, коли сервіс тривог не відповідає */
   .alerts-offline{
     background:rgba(251,191,36,0.12);
     border:1px solid rgba(251,191,36,0.45);
@@ -395,8 +443,6 @@
     margin-bottom:16px;
   }
   .alerts-offline[hidden]{display:none;}
-  /* блок атрибуції NEPTUN — обов'язковий за умовами API (§3, §5),
-     прибирати чи ховати його не можна */
   .alerts-credit{
     font-size:12px;
     opacity:.8;
@@ -406,13 +452,13 @@
     line-height:1.5;
   }
   .alerts-credit[hidden]{display:none;}
-  .alerts-credit a{color:inherit;}
+  .alerts-credit a{color:var(--accent);}
 
   /* ---------- модалка з картою тривог ---------- */
   .map-modal{
     position:fixed;
     inset:0;
-    background:rgba(15,23,42,0.75);
+    background:rgba(10,6,20,0.75);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -423,7 +469,9 @@
   .map-modal-box{
     background:var(--panel-bg);
     color:var(--panel-text);
-    border-radius:16px;
+    border:1px solid var(--panel-border);
+    backdrop-filter:blur(24px) saturate(140%);
+    border-radius:20px;
     width:100%;
     max-width:680px;
     max-height:92vh;
@@ -455,7 +503,7 @@
     min-height:340px;
     border:0;
     width:100%;
-    background:#0f172a;
+    background:#150e28;
   }
   .map-modal-foot{
     padding:12px 16px;
@@ -463,7 +511,7 @@
     line-height:1.6;
     opacity:.85;
   }
-  .map-modal-foot a{color:inherit;}
+  .map-modal-foot a{color:var(--accent);}
 
   /* ---------- перемикач вигляду ---------- */
   .view-toggle{
@@ -479,6 +527,7 @@
     border-radius:999px;
     font-size:13px;
     cursor:pointer;
+    font-family:inherit;
   }
 
   /* ---------- вигляд "тільки сьогодні" ---------- */
@@ -491,47 +540,49 @@
     align-items:center;
     gap:12px;
     padding:12px 16px;
-    border-bottom:1px solid #e2e8f0;
+    border-bottom:1px solid var(--table-border);
     font-size:14px;
+    color:var(--table-text);
   }
   .today-row:last-child{border-bottom:none;}
-  .today-row.current{background:#dcfce7 !important;font-weight:700;}
-  .today-row.next{background:#fef3c7 !important;font-weight:700;}
+  .today-row.current{background:rgba(52,211,153,0.2) !important;font-weight:700;color:var(--h1-color);}
+  .today-row.next{background:rgba(251,191,36,0.18) !important;font-weight:700;color:var(--h1-color);}
   .today-row.past{opacity:.45;filter:grayscale(70%);}
   .today-row.subject-tinted{
-    background:color-mix(in srgb, var(--subj) 14%, white);
+    background:color-mix(in srgb, var(--subj) 16%, transparent);
     border-left:4px solid var(--subj);
   }
   .today-num{
     width:26px;height:26px;
     border-radius:50%;
-    background:#1e293b;
-    color:#fff;
+    background:rgba(255,255,255,0.16);
+    color:var(--h1-color);
     display:flex;align-items:center;justify-content:center;
     font-size:12px;font-weight:700;
     flex-shrink:0;
   }
-  .today-time{color:#64748b;font-size:12px;width:90px;flex-shrink:0;}
+  .today-time{color:var(--sub-color);font-size:12px;width:90px;flex-shrink:0;}
   .today-subject{flex:1;}
-  /* тут місця вистачає, тому кабінет — окремим чипом праворуч */
   .today-room{
     flex-shrink:0;
     font-size:11px;
     font-weight:600;
-    color:#64748b;
-    background:#eef2f7;
+    color:var(--sub-color);
+    background:rgba(255,255,255,0.1);
     border-radius:999px;
     padding:3px 9px;
     font-variant-numeric:tabular-nums;
   }
   .today-row.current .today-room,
-  .today-row.next .today-room{background:rgba(255,255,255,0.65);color:#334155;}
-  .today-empty{padding:20px;text-align:center;color:#94a3b8;font-size:14px;}
+  .today-row.next .today-room{background:rgba(255,255,255,0.25);color:var(--h1-color);}
+  .today-empty{padding:20px;text-align:center;color:var(--sub-color);font-size:14px;}
 
   /* ---------- таблица ---------- */
   .card{
-    background:#fff;
-    border-radius:16px;
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    backdrop-filter:blur(18px) saturate(140%);
+    border-radius:20px;
     overflow:hidden;
     box-shadow:0 20px 50px rgba(0,0,0,0.35);
   }
@@ -541,15 +592,16 @@
     min-width:600px;
     border-collapse:collapse;
     font-size:14px;
+    color:var(--table-text);
   }
   th, td{
-    border:1px solid #e2e8f0;
+    border:1px solid var(--table-border);
     padding:10px 10px;
     text-align:left;
   }
   th{
-    background:#1e293b;
-    color:#f1f5f9;
+    background:rgba(236,72,153,0.16);
+    color:var(--table-head-text);
     text-align:center;
     font-weight:600;
   }
@@ -560,85 +612,80 @@
   }
   td.time, th:nth-child(2){
     text-align:center;
-    color:#64748b;
+    color:var(--sub-color);
     font-size:12px;
     white-space:nowrap;
     width:85px;
   }
-  .empty{text-align:center;color:#cbd5e1;}
+  .empty{text-align:center;color:var(--sub-color);opacity:.5;}
 
-  /* Номер кабінету — округлий міні-бейдж біля правого краю комірки.
-     ВАЖЛИВО: flex вішаємо на внутрішній .lesson-cell, а не на сам <td>.
-     display:flex на комірці скасовує display:table-cell — рядок перестає бути
-     рядком таблиці й усе злипається в першу колонку (у Safari ще й по-своєму).
-     Тому <td> лишається коміркою, а розкладкою всередині керує обгортка. */
   #schedule .lesson-cell{
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:8px;
   }
-  /* min-width НЕ чіпаємо: за замовчуванням flex-item не стискається вужче за
-     min-content, тож колонка розсунеться під найдовше слово, а не порве його
-     навпіл ("Географі/я"). Ширину таблиці все одно тримає min-width:600px
-     і горизонтальна прокрутка .table-scroll. */
   .room{
     flex-shrink:0;
     font-size:10px;
     line-height:1;
     padding:3px 7px;
     border-radius:999px;
-    background:#eef2f7;
-    color:#64748b;
+    background:rgba(255,255,255,0.12);
+    color:var(--sub-color);
     font-weight:600;
     font-variant-numeric:tabular-nums;
   }
   td.current-cell .room,
-  td.next-cell .room{background:rgba(255,255,255,0.8);color:#334155;}
+  td.next-cell .room{background:rgba(127,127,127,0.28);color:var(--hl-text);}
   table.subject-colors-on td.subject-tinted .room{
-    background:color-mix(in srgb, var(--subj) 22%, white);
-    color:#334155;
+    background:color-mix(in srgb, var(--subj) 30%, transparent);
+    color:var(--table-text);
   }
 
-  tr.current-row{background:#dcfce7;}
+  tr.current-row{background:rgba(52,211,153,0.16);}
   tr.current-row td:first-child,
   tr.current-row td.time{
-    background:#16a34a;
-    color:#fff;
+    background:rgba(52,211,153,0.32);
+    color:var(--hl-text);
     font-weight:700;
   }
   td.current-cell{
-    background:#22c55e !important;
-    color:#fff;
+    background:rgba(52,211,153,0.4) !important;
+    color:var(--hl-text);
     font-weight:700;
-    border-left:4px solid #166534;
-    border-right:4px solid #166534;
+    border-left:4px solid #34d399;
+    border-right:4px solid #34d399;
   }
-  th.current-day{background:#16a34a;}
+  th.current-day{background:rgba(236,72,153,0.32);}
 
-  /* урок сьогодні, який уже минув — приглушений */
   td.past-cell{
     opacity:.4;
     filter:grayscale(75%);
   }
 
-  tr.break-row{background:#fef3c7;}
+  tr.break-row{background:rgba(251,191,36,0.14);}
+  /* Текст на бурштиновому — світлий, як і на зеленому. Темний (#241a0a) тут був
+     родом зі світлої теми: на білому тлі rgba(251,191,36,.3) дає яскравий жовтий,
+     і чорні літери читаються. У темній темі та сама заливка змішується з
+     фіолетовим тлом у брудно-коричневий, і контраст падав до 3.1:1 — нижче
+     норми. Зі світлим текстом виходить 6-7:1. */
   tr.break-row td:first-child,
   tr.break-row td.time{
-    background:#d97706;
-    color:#fff;
+    background:rgba(251,191,36,0.3);
+    color:var(--hl-text);
     font-weight:700;
   }
   td.next-cell{
-    background:#f59e0b !important;
-    color:#fff;
+    background:rgba(251,191,36,0.36) !important;
+    color:var(--hl-text);
     font-weight:700;
   }
 
   /* ---------- кольори предметів (опційно) ---------- */
   .subject-cell{cursor:pointer;position:relative;}
   table.subject-colors-on td.subject-tinted{
-    background:color-mix(in srgb, var(--subj) 14%, white);
+    background:color-mix(in srgb, var(--subj) 16%, transparent);
     border-left:4px solid var(--subj);
   }
   .has-note::after{
@@ -647,48 +694,55 @@
     top:4px;right:4px;
     width:7px;height:7px;
     border-radius:50%;
-    background:#f59e0b;
-    box-shadow:0 0 0 1px #fff;
+    background:var(--accent);
+    box-shadow:0 0 0 1px rgba(255,255,255,0.5);
   }
 
   /* ---------- встановлення застосунку ---------- */
   .install-card{
     background:var(--panel-bg);
     color:var(--panel-text);
-    border-radius:16px;
+    border:1px solid var(--panel-border);
+    backdrop-filter:blur(20px) saturate(140%);
+    border-radius:20px;
     padding:20px 22px;
     margin-top:16px;
     box-shadow:0 20px 50px rgba(0,0,0,0.3);
   }
   .install-card h3{margin:0 0 8px;font-size:16px;}
-  .install-lead{margin:0 0 14px;font-size:13px;color:#64748b;line-height:1.5;}
+  .install-lead{margin:0 0 14px;font-size:13px;color:var(--sub-color);line-height:1.5;}
   .install-status{
-    background:#dcfce7;
-    color:#166534;
+    background:rgba(52,211,153,0.18);
+    color:#6ee7b7;
     border-radius:10px;
     padding:10px 14px;
     font-size:13px;
     font-weight:600;
     margin-bottom:12px;
   }
+  /* Те саме, що й з .alert-banner: display:block вище перебиває вбудоване
+     [hidden]{display:none}, і напис «застосунок уже встановлено» висів би на
+     сторінці завжди — навіть у звичайній вкладці, де це неправда. */
+  .install-status[hidden]{display:none;}
   .install-btn{
     display:block;
     width:100%;
-    background:#16a34a;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
     color:#fff;
     border:none;
-    border-radius:12px;
+    border-radius:14px;
     padding:13px;
     font-size:15px;
     font-weight:700;
     cursor:pointer;
     margin-bottom:14px;
+    font-family:inherit;
   }
   .install-btn:hover{filter:brightness(1.08);}
-  .install-btn[hidden]{display:none;} /* без цього display:block вище перебиває стандартний [hidden] */
+  .install-btn[hidden]{display:none;}
   #installInstructions details{
     border:1px solid var(--panel-border);
-    border-radius:10px;
+    border-radius:12px;
     padding:10px 14px;
     margin-bottom:8px;
   }
@@ -696,13 +750,14 @@
     cursor:pointer;
     font-size:13px;
     font-weight:600;
+    color:var(--panel-text);
   }
   #installInstructions ol{
     margin:10px 0 2px;
     padding-left:20px;
     font-size:13px;
     line-height:1.6;
-    color:#334155;
+    color:var(--sub-color);
   }
 
   .footer{
@@ -721,7 +776,7 @@
     margin-top:16px;
     padding:14px 18px;
     background:var(--legend-bg);
-    border-radius:12px;
+    border-radius:16px;
   }
   .legend-item{
     display:flex;
@@ -736,9 +791,9 @@
     border-radius:4px;
     flex-shrink:0;
   }
-  .legend-swatch.current-row{background:#dcfce7;border:2px solid #16a34a;}
-  .legend-swatch.current-cell{background:#22c55e;border:2px solid #166534;}
-  .legend-swatch.break-row{background:#fef3c7;border:2px solid #d97706;}
+  .legend-swatch.current-row{background:rgba(52,211,153,0.3);border:2px solid #34d399;}
+  .legend-swatch.current-cell{background:#34d399;border:2px solid #166534;}
+  .legend-swatch.break-row{background:rgba(251,191,36,0.3);border:2px solid #fbbf24;}
 </style>
 </head>
 <body>
@@ -1255,11 +1310,21 @@ function renderAlertsHint(){
     offline.hidden = true;
     return;
   }
+  /* «Не відповідає» кажемо тільки тоді, коли запити справді падають.
+     Самої лише давності даних мало: у фоновій вкладці ми навмисно припиняємо
+     опитування, і через 5 хвилин сторінка почала б звинувачувати сервіс у тому,
+     що насправді зробили ми самі. */
   const stale = !alertState.okAt || (Date.now() - alertState.okAt) > ALERTS_STALE_MS;
-  if(stale){
+  if(alertsFailures && stale){
     hint.textContent = 'Сервіс тривог не відповідає';
     hint.classList.add('warn');
     offline.hidden = false;
+    return;
+  }
+  if(stale){
+    hint.textContent = 'Перевіряю…';
+    hint.classList.remove('warn');
+    offline.hidden = true;
     return;
   }
   const time = new Date(alertState.okAt).toTimeString().slice(0,5);
@@ -1270,6 +1335,8 @@ function renderAlertsHint(){
 
 function checkAlerts(){
   if(!settings.alerts) return Promise.resolve();
+  if(alertsInFlight) return Promise.resolve();   // попередній запит ще не завершився
+  alertsInFlight = true;
   return fetchAlerts()
     .then(data => {
       const res = regionAlerted(data, settings.alertRegion);
@@ -1288,11 +1355,18 @@ function checkAlerts(){
       if(Date.now() - alertState.okAt > ALERTS_STALE_MS) alertState.active = false;
     })
     .then(() => {
+      alertsInFlight = false;
       alertState.checkedAt = Date.now();
       renderAlertsHint();
       refreshStatusCard(); // одразу перемалювати картку, не чекати наступної секунди
     });
 }
+
+/* Один запит за раз. Без цього прапорця кожне повернення на вкладку стартувало б
+   ще одну перевірку поверх незавершеної: користувач перемикає застосунки — і за
+   кілька секунд летить пачка запитів до чужого API (це і 429, і порушення §4
+   про чесне навантаження). */
+let alertsInFlight = false;
 
 function scheduleAlertsCheck(){
   clearTimeout(alertsTimer);
@@ -1308,9 +1382,21 @@ function scheduleAlertsCheck(){
   }, delay);
 }
 
+/* Жорстка нижня межа між двома запитами. Умови NEPTUN (§4) кажуть опитувати
+   не частіше ніж раз на 5 секунд, і покладатись тут на дисципліну кожного місця
+   виклику ненадійно: startAlerts() смикають і перемикач, і зміна регіону, і
+   повернення на вкладку. Тому обмеження стоїть усередині — хай хто його кличе,
+   частіше за це запит не піде. */
+const ALERTS_MIN_GAP_MS = 5000;
+
 function startAlerts(){
   clearTimeout(alertsTimer);
   if(!settings.alerts) return;
+  const since = Date.now() - alertState.checkedAt;
+  if(alertState.checkedAt && since < ALERTS_MIN_GAP_MS){
+    scheduleAlertsCheck();   // щойно перевіряли — просто чекаємо наступного разу
+    return;
+  }
   checkAlerts().then(scheduleAlertsCheck); // перевірка одразу при вмиканні
 }
 
@@ -1388,8 +1474,16 @@ document.addEventListener('keydown', (e)=>{
 // Це і батарея, і чесне навантаження на чужий сервіс.
 document.addEventListener('visibilitychange', ()=>{
   if(!settings.alerts) return;
-  if(document.visibilityState === 'visible') startAlerts();
-  else clearTimeout(alertsTimer);
+  if(document.visibilityState !== 'visible'){
+    clearTimeout(alertsTimer);   // у фоні не опитуємо взагалі
+    return;
+  }
+  // Свіжу перевірку робимо, лише якщо дані вже застаріли. Інакше швидке
+  // перемикання між застосунками означало б запит на кожен дотик до екрана.
+  const age = Date.now() - alertState.checkedAt;
+  const interval = Math.max(10, Number(settings.alertInterval) || 30) * 1000;
+  if(age >= interval) startAlerts();
+  else scheduleAlertsCheck();
 });
 
 renderAlertRegionSelect();
@@ -1487,15 +1581,28 @@ function updateViewToggleLabel(){
     (wrapEl.dataset.view === 'today') ? '🗓️ Весь тиждень' : '📅 Тільки сьогодні';
 }
 
+/* Останній намальований HTML списку «сьогодні».
+   update() крутиться щосекунди, а список змінюється лише коли починається новий
+   урок, з'являється нотатка чи перемикають налаштування — тобто кілька разів на
+   день. Без цієї перевірки сторінка перебудовувала б увесь список 86 400 разів
+   на добу: це марна робота для збирача сміття, зайвий розряд батареї, а ще —
+   постійне знищення вузлів, на які браузер міг тримати виділення чи фокус. */
+let lastTodayHTML = null;
+function paintTodayView(container, html){
+  if(html === lastTodayHTML) return;
+  lastTodayHTML = html;
+  container.innerHTML = html;
+}
+
 function renderTodayView(dow, rows, matchedIdx, nextIdx, nowMinutes){
   const container = document.getElementById('todayView');
   container.dataset.day = dow;
   if(dow === -1){
-    container.innerHTML = '<div class="today-empty">Канікули / свято — уроків немає</div>';
+    paintTodayView(container, '<div class="today-empty">Канікули / свято — уроків немає</div>');
     return;
   }
   if(dayCols[dow] === undefined){
-    container.innerHTML = '<div class="today-empty">Сьогодні вихідний — уроків немає</div>';
+    paintTodayView(container, '<div class="today-empty">Сьогодні вихідний — уроків немає</div>');
     return;
   }
   let html = '';
@@ -1521,7 +1628,7 @@ function renderTodayView(dow, rows, matchedIdx, nextIdx, nowMinutes){
       + (room ? '<div class="today-room" title="Кабінет '+esc(room)+'">'+esc(room)+'</div>' : '')
       + '</div>';
   });
-  container.innerHTML = html || '<div class="today-empty">Уроків немає</div>';
+  paintTodayView(container, html || '<div class="today-empty">Уроків немає</div>');
 }
 
 // Клік по рядку "тільки сьогодні" — та ж нотатка, що й у таблиці (делегування,
@@ -1903,7 +2010,8 @@ function applySchedule(schedule, id){
   renderScheduleTable(schedule);
   setupSubjectCells();
   applySubjectColorsToggle();
-  lastPhaseKey = null; // щоб перемикання розкладу не давало бип "зміни уроку"
+  lastPhaseKey = null;  // щоб перемикання розкладу не давало бип "зміни уроку"
+  lastTodayHTML = null; // новий розклад — кеш списку "сьогодні" більше не дійсний
   update();
 }
 
@@ -2135,12 +2243,30 @@ if('serviceWorker' in navigator){
     }).catch(()=>{});
   });
 
-  // щойно новий service worker (нова версія) перейняв контроль — оновлюємо сторінку,
-  // щоб застосунок сам підхопив свіжий розклад без ручного видалення/перевстановлення
+  /* Щойно новий service worker перейняв контроль — оновлюємо сторінку, щоб
+     застосунок сам підхопив свіжу версію без перевстановлення.
+
+     Дві умови, без яких це перетворюється на самовільні перезавантаження:
+
+     1) hadController. При ПЕРШОМУ відкритті контролера ще немає: sw.js
+        встановлюється й одразу робить clients.claim() — теж 'controllerchange'.
+        Перезавантажувати тут нема чого (сторінка вже найсвіжіша), а користувач
+        бачив би, як щойно відкрита сторінка сама себе перезапускає.
+
+     2) лічильник у sessionStorage. Якщо через збій sw.js активуватиметься знову
+        і знову, пара «reload → новий контролер → reload» піде по колу, і замість
+        розкладу людина отримає сторінку, що блимає без кінця. Дозволяємо не
+        більше двох перезавантажень на вкладку; далі просто лишаємо як є —
+        застаріла сторінка краща за нескінченний цикл. */
+  const hadController = !!navigator.serviceWorker.controller;
   let swRefreshed = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if(swRefreshed) return;
+    if(swRefreshed || !hadController) return;
     swRefreshed = true;
+    let n = 0;
+    try{ n = Number(sessionStorage.getItem('swReloads')) || 0; }catch(e){}
+    if(n >= 2) return;
+    try{ sessionStorage.setItem('swReloads', String(n + 1)); }catch(e){}
     window.location.reload();
   });
 }
