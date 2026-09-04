@@ -2276,10 +2276,18 @@ function update(){
   rows.forEach((tr, i) => {
     const start = toMinutes(tr.dataset.start);
     const end = toMinutes(tr.dataset.end);
-    if(nowMinutes >= start && nowMinutes < end) matchedIdx = i;
-    if(nowMinutes < start && nextIdx === -1) nextIdx = i;
-    // урок сьогоднішнього дня, який уже закінчився — приглушити в таблиці
     const todayCell = tr.children[dayCols[dow]];
+    // Порожній слот — це НЕ урок цього класу, хай навіть дзвінок для нього є.
+    // Без цієї перевірки о 14:00 у п'ятницю (сьомий дзвінок є, уроку немає)
+    // картка писала «Зараз йде урок: —». Порожні слоти просто пропускаємо:
+    // тоді час у них рахується як перерва до наступного уроку, а якщо далі
+    // уроків немає — як «уроки завершено».
+    const hasLesson = !!subjectOf(todayCell);
+    if(hasLesson){
+      if(nowMinutes >= start && nowMinutes < end) matchedIdx = i;
+      if(nowMinutes < start && nextIdx === -1) nextIdx = i;
+    }
+    // урок сьогоднішнього дня, який уже закінчився — приглушити в таблиці
     if(end <= nowMinutes && todayCell) todayCell.classList.add('past-cell');
   });
 
@@ -2306,10 +2314,18 @@ function update(){
     setProgress(startMin, endMin);
     themeColorMeta.setAttribute('content', '#16a34a');
 
-    const nextTr = rows[matchedIdx+1];
+    // Шукаємо наступний слот, у якому в цього класу СПРАВДІ є урок. Просто
+    // matchedIdx+1 не годиться: якщо наступний слот порожній (як сьомий у
+    // п'ятницю), він підсвічувався б жовтим як «наступний урок», а в картці
+    // писалося б «Далі: перерва 5 хв» без назви.
+    let nextRowIdx = -1;
+    for(let i = matchedIdx + 1; i < rows.length; i++){
+      if(subjectOf(rows[i].children[dayCols[dow]])){ nextRowIdx = i; break; }
+    }
+    const nextTr = nextRowIdx === -1 ? null : rows[nextRowIdx];
     if(nextTr){
       const gapMin = toMinutes(nextTr.dataset.start) - toMinutes(tr.dataset.end);
-      const nextName = lessonAt(matchedIdx+1, dow);
+      const nextName = lessonAt(nextRowIdx, dow);
       nextTr.classList.add('break-row');
       const nextCell = nextTr.children[dayCols[dow]];
       nextCell && nextCell.classList.add('next-cell');
