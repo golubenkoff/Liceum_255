@@ -341,29 +341,32 @@
     --card-holiday:linear-gradient(135deg, #e0e7ff, #ffffff);
   }
   /* Плашка в цій палітрі світла в обох темах, тому текст на ній завжди темний —
-     інакше в темній темі білі літери лягли б на світло-зелене тло. */
-  html[data-palette="classic"] .status-card.lesson .state-label,
-  html[data-palette="classic"] .status-card.break .state-label,
-  html[data-palette="classic"] .status-card.done .state-label,
-  html[data-palette="classic"] .status-card.weekend .state-label,
-  html[data-palette="classic"] .status-card.before .state-label,
-  html[data-palette="classic"] .status-card.holiday .state-label{ color:#0f172a; }
-  html[data-palette="classic"] .status-card.lesson .state-label{ color:#166534; }
-  html[data-palette="classic"] .status-card.break .state-label{ color:#854d0e; }
-  html[data-palette="classic"] .status-card.holiday .state-label{ color:#3730a3; }
-  html[data-palette="classic"] .status-card.lesson .timer{ color:#14532d; }
-  html[data-palette="classic"] .status-card.break .timer{ color:#713f12; }
-  html[data-palette="classic"] .status-card.lesson .lesson-name,
-  html[data-palette="classic"] .status-card.break .lesson-name,
-  html[data-palette="classic"] .status-card.done .lesson-name,
-  html[data-palette="classic"] .status-card.weekend .lesson-name,
-  html[data-palette="classic"] .status-card.before .lesson-name,
-  html[data-palette="classic"] .status-card.holiday .lesson-name{ color:#0f172a; }
-  html[data-palette="classic"] .status-card:not(.alert-on) .timer.neutral,
-  html[data-palette="classic"] .status-card:not(.alert-on) .timer-caption,
-  html[data-palette="classic"] .status-card:not(.alert-on) .next-info{ color:#475569; }
-  html[data-palette="classic"] .status-card:not(.alert-on) .next-info{ border-top-color:rgba(15,23,42,0.14); }
-  html[data-palette="classic"] .status-card:not(.alert-on) .next-info b{ color:#0f172a; }
+     інакше в темній темі білі літери лягли б на світло-зелене тло.
+     :not(.alert-on):not(.silence) обов'язкове. Ці селектори специфічніші за
+     правила тривоги й хвилини мовчання, і без застереження темно-зелений текст
+     лягав би на червону картку тривоги — заміряно 2.95:1, тобто таймер тонув. */
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).lesson .state-label,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).break .state-label,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).done .state-label,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).weekend .state-label,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).before .state-label,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).holiday .state-label{ color:#0f172a; }
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).lesson .state-label{ color:#166534; }
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).break .state-label{ color:#854d0e; }
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).holiday .state-label{ color:#3730a3; }
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).lesson .timer{ color:#14532d; }
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).break .timer{ color:#713f12; }
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).lesson .lesson-name,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).break .lesson-name,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).done .lesson-name,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).weekend .lesson-name,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).before .lesson-name,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence).holiday .lesson-name{ color:#0f172a; }
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence) .timer.neutral,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence) .timer-caption,
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence) .next-info{ color:#475569; }
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence) .next-info{ border-top-color:rgba(15,23,42,0.14); }
+  html[data-palette="classic"] .status-card:not(.alert-on):not(.silence) .next-info b{ color:#0f172a; }
   html[data-palette="classic"] thead th{ color:#f1f5f9; }
 
   /* ---------- рожева (перший варіант glass-дизайну) ---------- */
@@ -1740,6 +1743,12 @@ const ALERT_REGIONS = [
 let alertState = { active:false, where:'', label:'', okAt:0, checkedAt:0 };
 let alertsTimer = null;
 let alertsFailures = 0;
+/* Один запит за раз. Без цього прапорця кожне повернення на вкладку стартувало б
+   ще одну перевірку поверх незавершеної: користувач перемикає застосунки — і за
+   кілька секунд летить пачка запитів до чужого API (це і 429, і порушення §4
+   про чесне навантаження). */
+let alertsInFlight = false;
+
 
 /* Перемалювати статус-картку поза звичайним тіком годинника.
    Захист від гонки: перша перевірка тривог може відповісти раніше, ніж
@@ -1873,23 +1882,23 @@ function checkAlerts(){
     });
 }
 
-/* Один запит за раз. Без цього прапорця кожне повернення на вкладку стартувало б
-   ще одну перевірку поверх незавершеної: користувач перемикає застосунки — і за
-   кілька секунд летить пачка запитів до чужого API (це і 429, і порушення §4
-   про чесне навантаження). */
-let alertsInFlight = false;
-
-function scheduleAlertsCheck(){
+/* delayMs — необов'язкове перекриття паузи. Потрібне, коли запит щойно був і
+   спрацював мінімальний проміжок: тоді чекати треба лише його залишок, а не
+   повний інтервал. Без цього зміна регіону відразу після перевірки відкладала
+   новий регіон на всі 30 секунд (перевірено тестом). */
+function scheduleAlertsCheck(delayMs){
   clearTimeout(alertsTimer);
   if(!settings.alerts) return;
   // Експоненційний бекоф на помилках — щоб не довбати чужий сервіс, коли він лежить
   // (умова §4 «чесне навантаження»), і щоб не жерти батарею в офлайні.
   const base = Math.max(10, Number(settings.alertInterval) || 30) * 1000;
-  const delay = alertsFailures
-    ? Math.min(base * Math.pow(2, alertsFailures), ALERTS_MAX_BACKOFF_MS)
-    : base;
+  const delay = (typeof delayMs === 'number' && delayMs >= 0)
+    ? delayMs
+    : (alertsFailures
+        ? Math.min(base * Math.pow(2, alertsFailures), ALERTS_MAX_BACKOFF_MS)
+        : base);
   alertsTimer = setTimeout(() => {
-    checkAlerts().then(scheduleAlertsCheck);
+    checkAlerts().then(() => scheduleAlertsCheck());
   }, delay);
 }
 
@@ -1905,10 +1914,12 @@ function startAlerts(){
   if(!settings.alerts) return;
   const since = Date.now() - alertState.checkedAt;
   if(alertState.checkedAt && since < ALERTS_MIN_GAP_MS){
-    scheduleAlertsCheck();   // щойно перевіряли — просто чекаємо наступного разу
+    // Щойно перевіряли: чекаємо рівно залишок мінімального проміжку, а не
+    // повний інтервал — інакше новий регіон показався б аж за пів хвилини.
+    scheduleAlertsCheck(ALERTS_MIN_GAP_MS - since);
     return;
   }
-  checkAlerts().then(scheduleAlertsCheck); // перевірка одразу при вмиканні
+  checkAlerts().then(() => scheduleAlertsCheck()); // перевірка одразу при вмиканні
 }
 
 function stopAlerts(){
