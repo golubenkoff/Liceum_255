@@ -1376,6 +1376,14 @@
       </label>
     </div>
     <div class="setting-row">
+      <span>Системні сповіщення (урок, перерва, тривога)</span>
+      <label class="switch">
+        <input type="checkbox" id="toggleNotify" aria-label="Системні сповіщення про урок, перерву і тривогу">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="setting-hint" id="notifyHint">&nbsp;</div>
+    <div class="setting-row">
       <span>Повітряні тривоги</span>
       <label class="switch">
         <input type="checkbox" id="toggleAlerts" aria-label="Інтеграція з сервісом повітряних тривог">
@@ -1603,6 +1611,7 @@ const DEFAULT_SETTINGS = {
   theme:'dark', subjectColors:false, progressBar:false, sound:true, scheduleId:null,
   palette:'classic',                  // оформлення: classic | blue | violet | rose | flag
   silenceMinute:true,                 // хвилина мовчання о 9:00 — за замовчуванням увімкнена
+  notify:false,                       // системні сповіщення — вимкнені, дозвіл питаємо лише по жесту
   alerts:false,                       // інтеграція з сервісом тривог — вимкнена, вмикає користувач
   alertRegion:'м. київ',              // ключ регіону в API NEPTUN (нижній регістр!)
   alertInterval:30                    // секунди між перевірками
@@ -1716,6 +1725,126 @@ function playBeep(){
   }catch(e){}
   if(navigator.vibrate) navigator.vibrate([200,80,200]);
 }
+
+/* ==================== СИСТЕМНІ СПОВІЩЕННЯ ====================
+   Банер в шторці ОС на початок уроку, початок перерви, кінець уроків, хвилину
+   мовчання і тривогу/відбій. Тумблер у налаштуваннях, за замовчуванням вимкнено:
+   поки він вимкнений, тут не виконується нічого і поведінка застосунку така сама,
+   як була (тільки біп).
+
+   Це ЛОКАЛЬНІ сповіщення, а не push. Вони показуються, лише поки сторінка жива в
+   пам'яті: відкрита — вчасно, згорнута — із запізненням до ~хвилини (браузер душить
+   таймери у фоні), закрита — не показуються взагалі. Справжній фоновий пуш вимагає
+   сервера з VAPID-ключами й базою підписок (Web Push / FCM), а проєкт — статичні
+   файли на GitHub Pages, серверу тут узятися нізвідки. periodicSync теж не варіант:
+   лише Chrome, лише у встановленій PWA, мінімальний інтервал у годинах. Не шукати
+   тут обхідний шлях удруге — його немає, поки немає бекенда.
+
+   Доставка йде через реєстрацію service worker'а, а не через `new Notification()`:
+   у WebKit конструктора немає взагалі, на iPhone сповіщення працюють лише через
+   showNotification і лише у встановленій на екран «Домівка» PWA (iOS 16.4+).      */
+let swRegForNotify = null;
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.ready.then(r => { swRegForNotify = r; }).catch(()=>{});
+}
+
+function notifySupported(){
+  return typeof window.Notification !== 'undefined'
+      && typeof Notification.requestPermission === 'function';
+}
+function isIOS(){
+  return /iP(hone|ad|od)/.test(navigator.userAgent);
+}
+function isInstalledApp(){
+  try{
+    return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  }catch(e){ return false; }
+}
+
+/* tag — вид події ('lesson' | 'break' | 'done' | 'silence' | 'alert'). Нове
+   сповіщення того самого виду замінює попереднє, тож шторка не заростає стосом
+   однакових банерів. Дозвіл перевіряємо на кожному виклику: його можуть відкликати
+   в налаштуваннях ОС посеред дня. Помилка тут не має чіпати розклад — тому все
+   загорнуте, а обіцянка showNotification гаситься .catch. */
+function notify(title, body, tag, extra){
+  if(!settings.notify) return;
+  if(!notifySupported() || Notification.permission !== 'granted') return;
+  const opts = Object.assign({
+    body: body,
+    tag: tag,
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    lang: 'uk'
+  }, extra || {});
+  try{
+    if(swRegForNotify && swRegForNotify.showNotification){
+      swRegForNotify.showNotification(title, opts).catch(()=>{});
+    } else if(typeof Notification === 'function'){
+      new Notification(title, opts);   // десктоп без SW; на iOS сюди не доходить
+    }
+  }catch(e){}
+}
+
+function renderNotifyHint(){
+  const hint = document.getElementById('notifyHint');
+  if(!hint) return;
+  hint.classList.remove('warn');
+  if(!notifySupported()){
+    hint.classList.add('warn');
+    hint.textContent = isIOS() && !isInstalledApp()
+      ? 'На iPhone сповіщення працюють лише у встановленому застосунку — додайте сторінку на екран «Домівка».'
+      : 'Браузер не підтримує системні сповіщення.';
+    return;
+  }
+  if(Notification.permission === 'denied'){
+    hint.classList.add('warn');
+    hint.textContent = 'Сповіщення заблоковані в налаштуваннях браузера — зніміть блок там.';
+    return;
+  }
+  if(!settings.notify){
+    hint.innerHTML = '&nbsp;';
+    return;
+  }
+  hint.textContent = 'Приходять, поки застосунок відкритий або нещодавно згорнутий. Це не будильник: якщо застосунок закрито, сповіщення не прийде.';
+}
+
+/* Дозвіл питаємо ТІЛЬКИ з жесту користувача — так само, як unlockAudio() у
+   тумблері звуку. На iOS поза жестом requestPermission просто не спрацює, а при
+   старті сторінки таке питання ще й нав'язливе. */
+document.getElementById('toggleNotify').addEventListener('change', (e)=>{
+  if(!e.target.checked){
+    settings.notify = false;
+    saveSettings();
+    renderNotifyHint();
+    return;
+  }
+  if(!notifySupported()){
+    e.target.checked = false;
+    renderNotifyHint();
+    return;
+  }
+  Promise.resolve(Notification.requestPermission()).then(p => {
+    const ok = p === 'granted';
+    settings.notify = ok;
+    e.target.checked = ok;
+    saveSettings();
+    renderNotifyHint();
+  }).catch(()=>{
+    settings.notify = false;
+    e.target.checked = false;
+    saveSettings();
+    renderNotifyHint();
+  });
+});
+
+// Дозвіл могли зняти в налаштуваннях ОС, поки застосунок був згорнутий.
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') renderNotifyHint();
+});
+
+document.getElementById('toggleNotify').checked =
+  settings.notify && notifySupported() && Notification.permission === 'granted';
+renderNotifyHint();
 
 /* ==================== ПОВІТРЯНІ ТРИВОГИ (NEPTUN) ====================
    Джерело: https://neptun.in.ua/api/v1/alerts — відкритий REST, без ключів,
@@ -1895,11 +2024,27 @@ function checkAlerts(){
     .then(data => {
       const res = regionAlerted(data, settings.alertRegion);
       if(!res) throw new Error('bad payload');
+      /* Фронт «тривога ↔ відбій» рахуємо ТІЛЬКИ тут, в успішній гілці.
+         hadReading відсікає перше вдале читання після завантаження сторінки,
+         зміни регіону і повторного вмикання модуля (всі три обнуляють okAt) —
+         інакше кожне відкриття застосунку посеред довгої тривоги давало б
+         нове «Тривога!». Гілка .catch фронту не дає навмисно: збій мережі це
+         «невідомо», а не «відбій», і збрехати про відбій гірше, ніж змовчати. */
+      const hadReading = alertState.okAt > 0;
+      const wasActive = alertState.active;
       alertState.active = res.active;
       alertState.where = res.where;
       alertState.label = res.label;
       alertState.okAt = Date.now();
       alertsFailures = 0;
+      if(hadReading && res.active !== wasActive){
+        notify(
+          res.active ? '🔴 Повітряна тривога' : '🟢 Відбій тривоги',
+          res.where || regionName(settings.alertRegion),
+          'alert',
+          { renotify:true, requireInteraction:res.active }
+        );
+      }
     })
     .catch(() => {
       // Мовчки. Помилка сервісу тривог не має ставати помилкою розкладу —
@@ -2213,6 +2358,15 @@ function fmtClock(totalSeconds){
 }
 
 let lastPhaseKey = null;
+let lastSilence = false;
+
+/* Скільки часу минуло з попереднього тіку. У фоні браузер душить setInterval до
+   ~1 разу на хвилину — це нормально, сповіщення просто трохи спізниться. А от
+   вкладка, заморожена на пів години, при пробудженні побачила б зміну phaseKey і
+   бахнула б «почався урок» про урок, який давно скінчився. Поріг ріже саме цей
+   випадок: 60 с фонового тіку проходять, 40 хвилин заморозки — ні. */
+let lastTickAt = 0;
+const NOTIFY_MAX_LAG_MS = 90 * 1000;
 
 /* Хвилина мовчання — щодня о 9:00 рівно одну хвилину. У таблицю уроків не
    потрапляє навмисне: це не урок, а загальнодержавна хвилина, і показувати її
@@ -2231,6 +2385,7 @@ function update(){
   const dow = jsDay === 0 ? 7 : jsDay; // 1=пн..7=нд — нумерація днів як у JSON розкладу
   const nowSeconds = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
   const nowMinutes = Math.floor(nowSeconds/60);
+  const canNotify = !!lastTickAt && (Date.now() - lastTickAt) <= NOTIFY_MAX_LAG_MS;
 
   const rows = Array.from(document.querySelectorAll('#schedule tr[data-start]'));
   const headers = document.querySelectorAll('#schedule th[data-day]');
@@ -2274,6 +2429,7 @@ function update(){
   let nextIdx = -1;
   let phaseKey;
   let todayDow = dow;
+  let notice = null;   // текст системного сповіщення для цієї фази (null = не сповіщати)
 
   const holiday = findHoliday(now);
 
@@ -2369,6 +2525,14 @@ function update(){
     }
     phaseKey = 'lesson-'+dow+'-'+matchedIdx;
 
+    const curName = subjectOf(dayCell);
+    const curRoom = roomFor(curName);
+    notice = {
+      title: '📚 Початок уроку: ' + (curName || '—'),
+      body: (matchedIdx+1) + ' урок · ' + (curRoom ? 'каб. ' + curRoom + ' · ' : '') + 'до ' + tr.dataset.end,
+      tag: 'lesson'
+    };
+
   } else if(nextIdx !== -1){
     // перерва або уроки ще не почались
     const tr = rows[nextIdx];
@@ -2402,6 +2566,13 @@ function update(){
     themeColorMeta.setAttribute('content', '#d97706');
     phaseKey = 'break-'+dow+'-'+nextIdx;
 
+    const nextRoom = roomFor(nextName);
+    notice = {
+      title: isBeforeFirst ? '🎒 Скоро початок занять' : '🍎 Початок перерви · ' + (startMin - prevEnd) + ' хв',
+      body: 'Далі: ' + (nextName || '—') + (nextRoom ? ' · каб. ' + nextRoom : '') + ' о ' + tr.dataset.start,
+      tag: 'break'
+    };
+
   } else {
     // уроки закінчились
     card.classList.add('done');
@@ -2414,6 +2585,7 @@ function update(){
     nextInfo.innerHTML = 'Наступний навчальний день — ' + nextSchoolDayLabel(dow);
     themeColorMeta.setAttribute('content', '#64748b');
     phaseKey = 'done-'+dow;
+    notice = { title: '🏁 Уроки завершено', body: 'На сьогодні все', tag: 'done' };
   }
   } // кінець звичайного навчального дня
 
@@ -2443,6 +2615,13 @@ function update(){
     themeColorMeta.setAttribute('content', '#475569');
   }
 
+  /* Хвилина мовчання має власний фронт, а не phaseKey: накладки навмисно не
+     чіпають phaseKey (див. коментар вище), тож інакше цю подію не спіймати. */
+  if(silence && !lastSilence && canNotify){
+    notify('🕯️ Хвилина мовчання', '09:00 — вшановуємо пам’ять загиблих.', 'silence');
+  }
+  lastSilence = silence;
+
   const alertOn = settings.alerts && alertState.active;
   banner.hidden = !alertOn;
   bannerSub.hidden = !alertOn;
@@ -2458,13 +2637,19 @@ function update(){
     themeColorMeta.setAttribute('content', '#dc2626');
   }
 
+  const phaseChanged = lastPhaseKey !== null && phaseKey !== lastPhaseKey;
+
   // Біп лише на межі урок↔перерва. Під час хвилини мовчання — тиша, це очевидно;
   // окремої сирени на тривогу теж не робимо, справжня вже прозвучала.
-  if(lastPhaseKey !== null && phaseKey !== lastPhaseKey &&
-     (phaseKey.startsWith('lesson-') || phaseKey.startsWith('break-'))){
+  if(phaseChanged && (phaseKey.startsWith('lesson-') || phaseKey.startsWith('break-'))){
     playBeep();
   }
+  // Системне сповіщення — на тих самих межах плюс «уроки завершено» (звуку там
+  // навмисно немає, а от знати, що на сьогодні все, корисно).
+  if(phaseChanged && notice && canNotify) notify(notice.title, notice.body, notice.tag);
+
   lastPhaseKey = phaseKey;
+  lastTickAt = Date.now();
 
   renderTodayView(todayDow, rows, matchedIdx, nextIdx, nowMinutes);
 }

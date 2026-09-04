@@ -78,3 +78,19 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+/* Клік по системному сповіщенню: фокус уже відкритого вікна застосунку, а якщо
+   жодного немає — відкрити його. Самі сповіщення надсилає сторінка через
+   registration.showNotification(); push-каналу тут немає і бути не може без
+   сервера (див. коментар у index.html). */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if ('focus' in client) return client.focus();
+      }
+      return self.clients.openWindow('./');
+    })
+  );
+});
