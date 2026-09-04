@@ -27,8 +27,12 @@
     --card-bg:rgba(255,255,255,0.06);
     --card-border:rgba(255,255,255,0.13);
     --input-bg:rgba(255,255,255,0.08);
-    --accent:#ec4899;
-    --accent-2:#a21caf;
+    --accent:#7c6cf5;
+    --accent-2:#4f46e5;
+    --glow-1:rgba(124,108,245,0.20);
+    --glow-2:rgba(139,92,246,0.16);
+    --head-bg:rgba(124,108,245,0.16);
+    --today-bg:rgba(124,108,245,0.30);
     --table-border:rgba(255,255,255,0.09);
     --table-text:#e2ddf5;
     --table-head-text:#e9e4ff;
@@ -36,6 +40,13 @@
        напівпрозора, тож поверх темного тла потрібен світлий текст, а поверх
        світлого — темний; інакше літери зникають). */
     --hl-text:#ffffff;
+    /* Кольори станів у статус-картці. Теж залежать від теми: світлі м'ятний
+       і бурштиновий гарно світяться на темній картці, але на світлій зникають
+       (заміряно 1.2:1). Для світлої теми потрібні насичені темні відтінки. */
+    --st-lesson:#6ee7b7;
+    --st-break:#fbbf24;
+    --st-break-label:#fde047;
+    --st-holiday:#c7d2fe;
   }
   @media (prefers-color-scheme: light){
     :root:not([data-theme]){
@@ -57,6 +68,16 @@
       --table-text:#2f2456;
       --table-head-text:#241a4d;
       --hl-text:#2a1e06;
+      --st-lesson:#065f46;
+      --st-break:#8a5206;
+      --st-break-label:#8a5206;
+      --st-holiday:#4338ca;
+      --accent:#6d5ae0;
+      --accent-2:#4f46e5;
+      --glow-1:rgba(124,108,245,0.18);
+      --glow-2:rgba(167,139,250,0.16);
+      --head-bg:rgba(109,90,224,0.14);
+      --today-bg:rgba(109,90,224,0.24);
     }
   }
   html[data-theme="light"]{
@@ -78,6 +99,16 @@
     --table-text:#2f2456;
     --table-head-text:#241a4d;
     --hl-text:#2a1e06;
+    --st-lesson:#065f46;
+    --st-break:#8a5206;
+    --st-break-label:#8a5206;
+    --st-holiday:#4338ca;
+    --accent:#6d5ae0;
+    --accent-2:#4f46e5;
+    --glow-1:rgba(124,108,245,0.18);
+    --glow-2:rgba(167,139,250,0.16);
+    --head-bg:rgba(109,90,224,0.14);
+    --today-bg:rgba(109,90,224,0.24);
   }
   html[data-theme="dark"]{
     --body-grad-1:#1b1130;
@@ -97,10 +128,420 @@
     --table-border:rgba(255,255,255,0.09);
     --table-text:#e2ddf5;
     --table-head-text:#e9e4ff;
-    /* Колір тексту в підсвічених клітинках таблиці (зелена/жовта заливка
-       напівпрозора, тож поверх темного тла потрібен світлий текст, а поверх
-       світлого — темний; інакше літери зникають). */
     --hl-text:#ffffff;
+    /* Кольори станів у статус-картці. Теж залежать від теми: світлі м'ятний
+       і бурштиновий гарно світяться на темній картці, але на світлій зникають
+       (заміряно 1.2:1). Для світлої теми потрібні насичені темні відтінки. */
+    --st-lesson:#6ee7b7;
+    --st-break:#fbbf24;
+    --st-break-label:#fde047;
+    --st-holiday:#c7d2fe;
+    --accent:#7c6cf5;
+    --accent-2:#4f46e5;
+    --glow-1:rgba(124,108,245,0.20);
+    --glow-2:rgba(139,92,246,0.16);
+    --head-bg:rgba(124,108,245,0.16);
+    --today-bg:rgba(124,108,245,0.30);
+  }
+
+  /* ==================== ДРУК ====================
+     На папері немає ні теми, ні палітри — тільки чорне на білому. Кольорові
+     заливки тут шкідливі: на чорно-білому принтері зелена й жовта підкладки
+     стають однаково сірими, і "поточний урок" не відрізнити від "наступного".
+     Тому підсвічування передаємо формою: рамка + жирний шрифт + підпис. */
+  @media print{
+
+    /* Фон, переливи й тіні на папері не потрібні. */
+    body::before, body::after{ display:none !important; }
+    body{
+      background:#fff !important;
+      color:#000 !important;
+      padding:0 !important;
+      display:block !important;
+    }
+    .wrap{ max-width:none !important; width:100% !important; }
+
+    /* Лишаємо тільки заголовок і таблицю. */
+    .settings-panel, .gear-btn, .status-card, .view-toggle, #todayView,
+    .legend, .install-card, .alerts-offline, .map-modal, .footer{
+      display:none !important;
+    }
+
+    /* Скидаємо все, що могла додати палітра (у "прапорі" в h1 є золота риска
+       й inline-block) — на папері вигляд має бути однаковий, хай яке
+       оформлення обрано на екрані. */
+    .top-row, .top-row > div{ display:block !important; text-align:center !important; }
+    h1, p.sub{
+      color:#000 !important;
+      text-align:center !important;
+      border:none !important;
+      padding:0 !important;
+      margin:0 0 4px !important;
+      display:block !important;
+    }
+    h1{ font-size:20pt !important; }
+    p.sub{ font-size:10pt !important; margin-bottom:10px !important; }
+
+    .card{
+      background:none !important;
+      border:none !important;
+      box-shadow:none !important;
+      padding:0 !important;
+      backdrop-filter:none !important;
+    }
+    .table-scroll{ overflow:visible !important; }
+
+    /* Одна сторінка: альбомна орієнтація + заборона розривати рядки.
+       Розклад на 7 уроків × 5-6 днів у книжковій орієнтації переповзає на
+       другий аркуш, і другий аркуш — це майже завжди один зайвий рядок. */
+    @page{ size:A4 landscape; margin:10mm; }
+    table#schedule{
+      width:100% !important;
+      border-collapse:collapse !important;
+      border-radius:0 !important;
+      overflow:visible !important;
+      font-size:10pt !important;
+      color:#000 !important;
+      table-layout:fixed !important;
+      page-break-inside:avoid !important;
+      break-inside:avoid !important;
+    }
+    #schedule tr, #schedule thead{
+      page-break-inside:avoid !important;
+      break-inside:avoid !important;
+    }
+    /* Заокруглення на папері ні до чого — кути мають бути прямі. */
+    #schedule, #schedule th, #schedule td, #schedule tr:first-child th,
+    #schedule tr:last-child td, .card, .table-scroll{
+      border-radius:0 !important;
+    }
+    #schedule th, #schedule td{
+      border:1px solid #000 !important;
+      padding:5px 6px !important;
+      background:none !important;
+      color:#000 !important;
+      box-shadow:none !important;
+    }
+    #schedule thead th{
+      background:#e8e8e8 !important;
+      font-weight:700 !important;
+      border-bottom:2px solid #000 !important;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+    #schedule .room{
+      background:none !important;
+      color:#000 !important;
+      border:1px solid #666 !important;
+      border-radius:0 !important;
+      font-size:8pt !important;
+    }
+
+    /* Кольорові стани → форма, а не колір. */
+    tr.current-row, tr.break-row{ background:none !important; }
+    td.past-cell{ opacity:1 !important; filter:none !important; color:#555 !important; }
+    td.current-cell{
+      border:3px solid #000 !important;
+      font-weight:700 !important;
+    }
+    td.current-cell::after{ content:' ← зараз'; font-size:8pt; font-weight:400; }
+    td.next-cell{
+      border:3px dashed #000 !important;
+      font-weight:700 !important;
+    }
+    td.next-cell::after{ content:' ← далі'; font-size:8pt; font-weight:400; }
+    th.current-day{
+      background:#c9c9c9 !important;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+    /* Кольори предметів на папері тільки заважають. */
+    table.subject-colors-on td.subject-tinted{
+      background:none !important;
+      border-left:1px solid #000 !important;
+    }
+    /* Крапка-індикатор нотатки друком не передається. */
+    .has-note::after{ display:none !important; }
+  }
+
+  /* ==================== ПАЛІТРИ ====================
+     Тема (світла/темна) задає нейтральне: текст, картки, межі.
+     Палітра задає лише кольорові змінні — фон, акцент, підкладки таблиці.
+     Тому кожну палітру треба описати двічі: поверх темного тла потрібні
+     глибокі відтінки, поверх світлого — бліді, інакше або фон вигорає,
+     або текст втрачає контраст.
+
+     Порядок селекторів навмисний:
+       :root[data-palette=…]                      → темна (типова)
+       :root[data-palette=…]:not([data-theme])    → системна світла
+       html[data-theme=light][data-palette=…]     → світла вручну
+       html[data-theme=dark][data-palette=…]      → темна вручну
+     Специфічність зростає саме в цьому порядку, тож ручний вибір теми
+     завжди перемагає системний. Блоки стоять НИЖЧЕ тем — інакше тема
+     перетирала б палітру.
+     Палітра "violet" — типова, її значення вже лежать у блоках тем вище. */
+
+  /* ---------- класична (кольори першої версії, гілка Universal-2) ----------
+     Головна відмінність: уся плашка таймера виразно міняє колір під стан —
+     зелена під урок, бурштинова під перерву. Саме це й просили повернути.
+     Скляний ефект (розмиття, межа, тінь) лишається спільним для всіх палітр. */
+  :root[data-palette="classic"],
+  html[data-theme="dark"][data-palette="classic"]{
+    --body-grad-1:#0f172a;
+    --body-grad-2:#1e1b4b;
+    --body-grad-3:#0b1020;
+    --accent:#22c55e;
+    --accent-2:#0ea5e9;
+    --glow-1:rgba(30,27,75,0.55);
+    --glow-2:rgba(14,165,233,0.16);
+    --head-bg:rgba(30,41,59,0.85);
+    --today-bg:rgba(22,163,74,0.55);
+    /* Плашка світла в ОБИДВОХ темах — саме так було в першій версії: світла
+       картка на темному тлі. Якщо натомість підмішувати колір у темне тло
+       картки, виходить темно-зелене на темному, і напис стану на ньому тоне
+       (перевірено).
+       Заливки СУЦІЛЬНІ, без прозорості: з альфою 0.96 темне тло просвічувало
+       і глушило колір — заміряно (243,234,196) замість (254,243,199), жовтий
+       ставав брудно-бежевим. Скляний ефект лишається в решті палітр. */
+    --card-lesson:linear-gradient(135deg, #dcfce7, #ffffff);
+    --card-break:linear-gradient(135deg, #fde68a, #fffdf2);
+    --card-idle:linear-gradient(135deg, #e2e8f0, #ffffff);
+    --card-holiday:linear-gradient(135deg, #e0e7ff, #ffffff);
+  }
+  @media (prefers-color-scheme: light){
+    :root[data-palette="classic"]:not([data-theme]){
+      --body-grad-1:#e0f2fe;
+      --body-grad-2:#f8fafc;
+      --body-grad-3:#ffffff;
+      --accent:#15803d;
+      --accent-2:#0369a1;
+      --glow-1:rgba(14,165,233,0.20);
+      --glow-2:rgba(30,27,75,0.10);
+      --head-bg:rgba(30,41,59,0.88);
+      --today-bg:rgba(22,163,74,0.85);
+      --card-lesson:linear-gradient(135deg, #dcfce7, #ffffff);
+      --card-break:linear-gradient(135deg, #fde68a, #fffdf2);
+      --card-idle:linear-gradient(135deg, #e2e8f0, #ffffff);
+      --card-holiday:linear-gradient(135deg, #e0e7ff, #ffffff);
+    }
+  }
+  html[data-theme="light"][data-palette="classic"]{
+    --body-grad-1:#e0f2fe;
+    --body-grad-2:#f8fafc;
+    --body-grad-3:#ffffff;
+    --accent:#15803d;
+    --accent-2:#0369a1;
+    --glow-1:rgba(14,165,233,0.20);
+    --glow-2:rgba(30,27,75,0.10);
+    --head-bg:rgba(30,41,59,0.88);
+    --today-bg:rgba(22,163,74,0.85);
+    --card-lesson:linear-gradient(135deg, #dcfce7, #ffffff);
+    --card-break:linear-gradient(135deg, #fde68a, #fffdf2);
+    --card-idle:linear-gradient(135deg, #e2e8f0, #ffffff);
+    --card-holiday:linear-gradient(135deg, #e0e7ff, #ffffff);
+  }
+  /* Плашка в цій палітрі світла в обох темах, тому текст на ній завжди темний —
+     інакше в темній темі білі літери лягли б на світло-зелене тло. */
+  html[data-palette="classic"] .status-card.lesson .state-label,
+  html[data-palette="classic"] .status-card.break .state-label,
+  html[data-palette="classic"] .status-card.done .state-label,
+  html[data-palette="classic"] .status-card.weekend .state-label,
+  html[data-palette="classic"] .status-card.before .state-label,
+  html[data-palette="classic"] .status-card.holiday .state-label{ color:#0f172a; }
+  html[data-palette="classic"] .status-card.lesson .state-label{ color:#166534; }
+  html[data-palette="classic"] .status-card.break .state-label{ color:#854d0e; }
+  html[data-palette="classic"] .status-card.holiday .state-label{ color:#3730a3; }
+  html[data-palette="classic"] .status-card.lesson .timer{ color:#14532d; }
+  html[data-palette="classic"] .status-card.break .timer{ color:#713f12; }
+  html[data-palette="classic"] .status-card.lesson .lesson-name,
+  html[data-palette="classic"] .status-card.break .lesson-name,
+  html[data-palette="classic"] .status-card.done .lesson-name,
+  html[data-palette="classic"] .status-card.weekend .lesson-name,
+  html[data-palette="classic"] .status-card.before .lesson-name,
+  html[data-palette="classic"] .status-card.holiday .lesson-name{ color:#0f172a; }
+  html[data-palette="classic"] .status-card:not(.alert-on) .timer.neutral,
+  html[data-palette="classic"] .status-card:not(.alert-on) .timer-caption,
+  html[data-palette="classic"] .status-card:not(.alert-on) .next-info{ color:#475569; }
+  html[data-palette="classic"] .status-card:not(.alert-on) .next-info{ border-top-color:rgba(15,23,42,0.14); }
+  html[data-palette="classic"] .status-card:not(.alert-on) .next-info b{ color:#0f172a; }
+  html[data-palette="classic"] thead th{ color:#f1f5f9; }
+
+  /* ---------- рожева (перший варіант glass-дизайну) ---------- */
+  :root[data-palette="rose"],
+  html[data-theme="dark"][data-palette="rose"]{
+    --body-grad-1:#1b1130;
+    --body-grad-2:#241a4d;
+    --body-grad-3:#150e28;
+    --accent:#ec4899;
+    --accent-2:#a21caf;
+    --glow-1:rgba(236,72,153,0.18);
+    --glow-2:rgba(162,28,175,0.16);
+    --head-bg:rgba(236,72,153,0.16);
+    --today-bg:rgba(236,72,153,0.32);
+  }
+  @media (prefers-color-scheme: light){
+    :root[data-palette="rose"]:not([data-theme]){
+      --body-grad-1:#f3e8ff;
+      --body-grad-2:#eef1ff;
+      --body-grad-3:#ffffff;
+      --accent:#be185d;
+      --accent-2:#a21caf;
+      --glow-1:rgba(236,72,153,0.16);
+      --glow-2:rgba(192,132,252,0.16);
+      --head-bg:rgba(190,24,93,0.12);
+      --today-bg:rgba(190,24,93,0.22);
+    }
+  }
+  html[data-theme="light"][data-palette="rose"]{
+    --body-grad-1:#f3e8ff;
+    --body-grad-2:#eef1ff;
+    --body-grad-3:#ffffff;
+    --accent:#be185d;
+    --accent-2:#a21caf;
+    --glow-1:rgba(236,72,153,0.16);
+    --glow-2:rgba(192,132,252,0.16);
+    --head-bg:rgba(190,24,93,0.12);
+    --today-bg:rgba(190,24,93,0.22);
+  }
+
+  /* ---------- синя ---------- */
+  :root[data-palette="blue"],
+  html[data-theme="dark"][data-palette="blue"]{
+    --body-grad-1:#0b1730;
+    --body-grad-2:#12224a;
+    --body-grad-3:#081020;
+    --accent:#38bdf8;
+    --accent-2:#2563eb;
+    --glow-1:rgba(56,189,248,0.16);
+    --glow-2:rgba(37,99,235,0.20);
+    --head-bg:rgba(56,189,248,0.14);
+    --today-bg:rgba(56,189,248,0.28);
+  }
+  @media (prefers-color-scheme: light){
+    :root[data-palette="blue"]:not([data-theme]){
+      --body-grad-1:#e8f2ff;
+      --body-grad-2:#eef4ff;
+      --body-grad-3:#ffffff;
+      --accent:#0284c7;
+      --accent-2:#2563eb;
+      --glow-1:rgba(56,189,248,0.20);
+      --glow-2:rgba(37,99,235,0.14);
+      --head-bg:rgba(2,132,199,0.13);
+      --today-bg:rgba(2,132,199,0.22);
+    }
+  }
+  html[data-theme="light"][data-palette="blue"]{
+    --body-grad-1:#e8f2ff;
+    --body-grad-2:#eef4ff;
+    --body-grad-3:#ffffff;
+    --accent:#0284c7;
+    --accent-2:#2563eb;
+    --glow-1:rgba(56,189,248,0.20);
+    --glow-2:rgba(37,99,235,0.14);
+    --head-bg:rgba(2,132,199,0.13);
+    --today-bg:rgba(2,132,199,0.22);
+  }
+
+  /* ---------- синьо-золота (кольори прапора, приглушено) ----------
+     Золото лишається тільки в акцентах: посилання, перемикачі, кнопка
+     встановлення. Підкладку "сьогодні" навмисно роблю СИНЬОЮ, а не золотою:
+     жовтий у цій таблиці вже означає "наступний урок / перерва", і золотий
+     заголовок дня зливався б із цим значенням. */
+  :root[data-palette="flag"],
+  html[data-theme="dark"][data-palette="flag"]{
+    /* Сам фон читається як прапор: угорі синє небо, донизу тепле золото.
+       Не яскраво — це тло під текстом, а не банер. */
+    --body-grad-1:#0a1a3d;
+    --body-grad-2:#123061;
+    --body-grad-3:#3a2f12;
+    --accent:#e6b143;
+    --accent-2:#2b6cb0;
+    --glow-1:rgba(43,108,176,0.30);
+    --glow-2:rgba(230,177,67,0.22);
+    --head-bg:rgba(43,108,176,0.28);
+    --today-bg:rgba(43,108,176,0.40);
+    --flag-rule:rgba(230,177,67,0.85);
+  }
+  @media (prefers-color-scheme: light){
+    :root[data-palette="flag"]:not([data-theme]){
+      --body-grad-1:#dbe8ff;
+      --body-grad-2:#eef3ff;
+      --body-grad-3:#fdf3d4;
+      --accent:#a06d0c;
+      --accent-2:#1d4f8f;
+      --glow-1:rgba(43,108,176,0.22);
+      --glow-2:rgba(230,177,67,0.28);
+      --head-bg:rgba(29,79,143,0.18);
+      --today-bg:rgba(29,79,143,0.30);
+      --flag-rule:rgba(190,140,20,0.9);
+    }
+  }
+  html[data-theme="light"][data-palette="flag"]{
+    --body-grad-1:#dbe8ff;
+    --body-grad-2:#eef3ff;
+    --body-grad-3:#fdf3d4;
+    --accent:#a06d0c;
+    --accent-2:#1d4f8f;
+    --glow-1:rgba(43,108,176,0.22);
+    --glow-2:rgba(230,177,67,0.28);
+    --head-bg:rgba(29,79,143,0.18);
+    --today-bg:rgba(29,79,143,0.30);
+    --flag-rule:rgba(190,140,20,0.9);
+  }
+
+  /* Золота риска — синє над нею, золоте під нею. Живе лише в палітрі "прапор",
+     бо в інших палітрах вона не має сенсу (--flag-rule там не визначена, і
+     border-color просто успадкує звичайний колір межі). */
+  html[data-palette="flag"] thead th{
+    border-bottom:3px solid var(--flag-rule);
+  }
+  html[data-palette="flag"] h1{
+    padding-bottom:8px;
+    border-bottom:3px solid var(--flag-rule);
+    display:inline-block;
+  }
+  html[data-palette="flag"] .top-row > div{
+    text-align:center;
+  }
+
+  /* ==================== ПЕРЕЛИВ НА ФОНІ ====================
+     Дві кольорові плями повільно пливуть і міняють яскравість — фон "дихає".
+     Обидві лежать у псевдоелементах body з z-index:-1: так вони малюються
+     НАД власним фоном body, але ПІД усім вмістом, і не перехоплюють кліки.
+     Анімуються тільки transform і opacity — це композит на GPU, без
+     перемальовування сторінки. Ніякого filter:blur — м'якість дає сам
+     радіальний градієнт, а blur такого розміру відчутно гальмує телефон. */
+  body::before,
+  body::after{
+    content:'';
+    position:fixed;
+    z-index:-1;
+    pointer-events:none;
+    width:120vmax;
+    height:120vmax;
+    border-radius:50%;
+    will-change:transform, opacity;
+  }
+  body::before{
+    top:-45vmax; left:-35vmax;
+    background:radial-gradient(circle, var(--glow-1), transparent 62%);
+    animation:bgDrift1 34s ease-in-out infinite;
+  }
+  body::after{
+    bottom:-50vmax; right:-40vmax;
+    background:radial-gradient(circle, var(--glow-2), transparent 62%);
+    animation:bgDrift2 46s ease-in-out infinite;
+  }
+  @keyframes bgDrift1{
+    0%,100%{ transform:translate3d(0,0,0) scale(1);        opacity:.65; }
+    50%    { transform:translate3d(6vmax,4vmax,0) scale(1.12); opacity:1; }
+  }
+  @keyframes bgDrift2{
+    0%,100%{ transform:translate3d(0,0,0) scale(1.08);     opacity:1; }
+    50%    { transform:translate3d(-5vmax,-6vmax,0) scale(1); opacity:.6; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    body::before, body::after{ animation:none; opacity:.8; }
   }
 
   body{
@@ -114,7 +555,7 @@
     padding:32px 16px;
     display:flex;
     justify-content:center;
-    background:radial-gradient(circle at 18% 0%, rgba(236,72,153,0.16), transparent 45%), linear-gradient(165deg,var(--body-grad-1) 0%,var(--body-grad-2) 48%,var(--body-grad-3) 100%);
+    background:linear-gradient(165deg,var(--body-grad-1) 0%,var(--body-grad-2) 48%,var(--body-grad-3) 100%);
     min-height:100vh;
   }
   .wrap{max-width:900px;width:100%;}
@@ -174,13 +615,16 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:12px;
+    /* Переносимо, коли не влазить: у "Темі" три кнопки, в "Оформленні" чотири,
+       і на вузькому телефоні останню з них інакше зрізає край панелі. */
+    flex-wrap:wrap;
+    gap:8px 12px;
     padding:9px 0;
     border-bottom:1px solid var(--panel-border);
     font-size:14px;
   }
   .setting-row:last-child{border-bottom:none;}
-  .theme-buttons{display:flex;gap:6px;}
+  .theme-buttons{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:1 1 auto;min-width:0;}
   .theme-buttons button{
     border:1px solid var(--panel-border);
     background:var(--input-bg);
@@ -192,6 +636,7 @@
     font-family:inherit;
   }
   .theme-buttons button.active{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent;}
+  .setting-row > span{flex:0 1 auto;min-width:0;}
   .schedule-select{
     border:1px solid var(--panel-border);
     background:var(--input-bg);
@@ -250,19 +695,22 @@
     position:relative;
     overflow:hidden;
   }
+  /* Заливка картки за станом. Винесена в змінні, бо палітра "класична"
+     робить її помітно насиченішою: там уся плашка міняє колір під урок/перерву,
+     як було в першій версії, а решта палітр лишає делікатний скляний відтінок. */
   .status-card.lesson{
-    background:linear-gradient(135deg, rgba(52,211,153,0.24), var(--card-bg));
+    background:var(--card-lesson, linear-gradient(135deg, rgba(52,211,153,0.24), var(--card-bg)));
     border-color:rgba(110,231,183,0.35);
   }
   .status-card.break{
-    background:linear-gradient(135deg, rgba(251,191,36,0.22), var(--card-bg));
+    background:var(--card-break, linear-gradient(135deg, rgba(251,191,36,0.22), var(--card-bg)));
     border-color:rgba(253,224,71,0.3);
   }
   .status-card.done, .status-card.weekend, .status-card.before{
-    background:linear-gradient(135deg, rgba(148,163,184,0.18), var(--card-bg));
+    background:var(--card-idle, linear-gradient(135deg, rgba(148,163,184,0.18), var(--card-bg)));
   }
   .status-card.holiday{
-    background:linear-gradient(135deg, rgba(99,102,241,0.24), var(--card-bg));
+    background:var(--card-holiday, linear-gradient(135deg, rgba(99,102,241,0.24), var(--card-bg)));
     border-color:rgba(165,180,252,0.3);
   }
   .state-label{
@@ -272,10 +720,10 @@
     letter-spacing:1.5px;
     margin-bottom:10px;
   }
-  .state-label.lesson{color:#6ee7b7;}
-  .state-label.break{color:#fde047;}
+  .state-label.lesson{color:var(--st-lesson);}
+  .state-label.break{color:var(--st-break-label);}
   .state-label.done, .state-label.weekend, .state-label.before{color:var(--sub-color);}
-  .state-label.holiday{color:#c7d2fe;}
+  .state-label.holiday{color:var(--st-holiday);}
 
   .lesson-name{
     font-size:30px;
@@ -290,14 +738,15 @@
        "стрибає" щосекунди, коли 1 змінюється на 8. Нічого не завантажується —
        ці шрифти вже є в кожній ОС (SF Mono, Consolas, Roboto Mono). */
     font-family:ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace;
-    font-size:52px;
+    font-size:68px;
     font-weight:700;
+    line-height:1.05;
     font-variant-numeric:tabular-nums;
     letter-spacing:2px;
     margin:0 0 6px;
   }
-  .timer.lesson{color:#6ee7b7;}
-  .timer.break{color:#fbbf24;}
+  .timer.lesson{color:var(--st-lesson);}
+  .timer.break{color:var(--st-break);}
   .timer.neutral{color:var(--sub-color);}
 
   .timer-caption{
@@ -517,8 +966,12 @@
   .view-toggle{
     display:flex;
     justify-content:center;
+    gap:8px;
     margin-bottom:14px;
   }
+  /* Друк має сенс лише для повного тижня: у вигляді "тільки сьогодні"
+     друкувати нічого — це той самий день, що вже на екрані. */
+  .wrap[data-view="today"] #printBtn{display:none;}
   .view-toggle button{
     background:var(--legend-bg);
     color:var(--legend-text);
@@ -600,7 +1053,7 @@
     text-align:left;
   }
   th{
-    background:rgba(236,72,153,0.16);
+    background:var(--head-bg);
     color:var(--table-head-text);
     text-align:center;
     font-weight:600;
@@ -657,7 +1110,7 @@
     border-left:4px solid #34d399;
     border-right:4px solid #34d399;
   }
-  th.current-day{background:rgba(236,72,153,0.32);}
+  th.current-day{background:var(--today-bg);}
 
   td.past-cell{
     opacity:.4;
@@ -768,28 +1221,54 @@
   }
 
   /* ---------- легенда ---------- */
+  /* Сітка, а не flex із центруванням: пункти різної довжини при центруванні
+     лягали рвано, і маркери "плавали" по рядку. У дві колонки на широкому
+     екрані, в одну на телефоні — auto-fit сам вирішує, ширина не захардкоджена. */
   .legend{
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:center;
-    gap:20px;
+    display:grid;
+    grid-template-columns:1fr;   /* телефон — один стовпчик */
+    gap:10px 28px;
     margin-top:16px;
-    padding:14px 18px;
+    padding:16px 18px;
     background:var(--legend-bg);
     border-radius:16px;
   }
+  .legend-title{
+    grid-column:1 / -1;
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--sub-color);
+    margin-bottom:2px;
+  }
   .legend-item{
     display:flex;
-    align-items:center;
-    gap:8px;
+    align-items:flex-start;   /* довгий текст переносимо, маркер лишається вгорі */
+    gap:10px;
     font-size:13px;
+    line-height:1.45;
     color:var(--legend-text);
   }
+  .legend-item b{color:var(--h1-color);font-weight:600;}
   .legend-swatch{
     width:16px;
     height:16px;
     border-radius:4px;
     flex-shrink:0;
+    margin-top:2px;          /* оптично на рівні першого рядка тексту */
+  }
+  .legend-icon{
+    background:none;
+    font-size:14px;
+    line-height:1;
+    text-align:center;
+  }
+  /* Рівно дві колонки, а не auto-fit: із auto-fit на широкому екрані влазило
+     три пункти, і четвертий лишався сиротою в другому рядку. Чотири пункти
+     краще читаються сіткою 2×2. */
+  @media (min-width:560px){
+    .legend{ grid-template-columns:1fr 1fr; }
   }
   .legend-swatch.current-row{background:rgba(52,211,153,0.3);border:2px solid #34d399;}
   .legend-swatch.current-cell{background:#34d399;border:2px solid #166534;}
@@ -820,6 +1299,16 @@
         <button type="button" data-theme-value="light">Світла</button>
         <button type="button" data-theme-value="dark">Темна</button>
       </div>
+    </div>
+    <div class="setting-row">
+      <span>Оформлення</span>
+      <select class="schedule-select" id="paletteSelect" aria-label="Оформлення сторінки">
+        <option value="classic">Класичне</option>
+        <option value="blue">Синє</option>
+        <option value="violet">Фіолетове</option>
+        <option value="rose">Рожеве</option>
+        <option value="flag">Прапор</option>
+      </select>
     </div>
     <div class="setting-row">
       <span>Кольори предметів у таблиці</span>
@@ -901,6 +1390,7 @@
 
   <div class="view-toggle">
     <button type="button" id="viewToggleBtn">📅 Тільки сьогодні</button>
+    <button type="button" id="printBtn" title="Роздрукувати розклад">🖨️ Друк</button>
   </div>
 
   <div id="todayView" class="card"></div>
@@ -913,10 +1403,11 @@
   </div>
 
   <div class="legend">
-    <div class="legend-item"><span class="legend-swatch current-row"></span>Зелений рядок — поточний урок</div>
-    <div class="legend-item"><span class="legend-swatch current-cell"></span>Яскрава клітинка з рамкою — поточний урок сьогодні</div>
-    <div class="legend-item"><span class="legend-swatch break-row"></span>Жовтий рядок — перерва / наступний урок</div>
-    <div class="legend-item">📝 — клікни на предмет, щоб додати нотатку/домашнє завдання</div>
+    <div class="legend-title">Позначення в таблиці</div>
+    <div class="legend-item"><span class="legend-swatch current-row"></span><span>Зелений рядок — <b>поточний урок</b></span></div>
+    <div class="legend-item"><span class="legend-swatch break-row"></span><span>Жовтий рядок — <b>перерва / наступний</b></span></div>
+    <div class="legend-item"><span class="legend-swatch current-cell"></span><span>Яскрава клітинка з рамкою — поточний урок <b>сьогодні</b></span></div>
+    <div class="legend-item"><span class="legend-swatch legend-icon">📝</span><span>Клікни на предмет, щоб додати нотатку або домашнє завдання</span></div>
   </div>
 
   <div class="install-card" id="installCard">
@@ -1072,7 +1563,8 @@ function colorForSubject(name){
 
 /* ==================== НАЛАШТУВАННЯ КОРИСТУВАЧА ==================== */
 const DEFAULT_SETTINGS = {
-  theme:'auto', subjectColors:false, progressBar:false, sound:true, scheduleId:null,
+  theme:'dark', subjectColors:false, progressBar:false, sound:true, scheduleId:null,
+  palette:'classic',                  // оформлення: classic | blue | violet | rose | flag
   silenceMinute:true,                 // хвилина мовчання о 9:00 — за замовчуванням увімкнена
   alerts:false,                       // інтеграція з сервісом тривог — вимкнена, вмикає користувач
   alertRegion:'м. київ',              // ключ регіону в API NEPTUN (нижній регістр!)
@@ -1095,6 +1587,19 @@ function applyTheme(){
     b.classList.toggle('active', b.dataset.themeValue === settings.theme);
   });
 }
+function applyPalette(){
+  // Атрибут на <html>, як і тема: CSS-змінні палітри висять на :root.
+  document.documentElement.setAttribute('data-palette', settings.palette);
+  const sel = document.getElementById('paletteSelect');
+  sel.value = settings.palette;
+  if(!sel.value){                 // збережене значення зникло зі списку
+    settings.palette = DEFAULT_SETTINGS.palette;
+    sel.value = settings.palette;
+    document.documentElement.setAttribute('data-palette', settings.palette);
+    saveSettings();
+  }
+}
+
 function applySubjectColorsToggle(){
   document.getElementById('schedule').classList.toggle('subject-colors-on', settings.subjectColors);
 }
@@ -1109,6 +1614,11 @@ document.getElementById('themeButtons').addEventListener('click', (e)=>{
   settings.theme = btn.dataset.themeValue;
   saveSettings();
   applyTheme();
+});
+document.getElementById('paletteSelect').addEventListener('change', (e)=>{
+  settings.palette = e.target.value;
+  saveSettings();
+  applyPalette();
 });
 document.getElementById('toggleColors').addEventListener('change', (e)=>{
   settings.subjectColors = e.target.checked;
@@ -1135,6 +1645,7 @@ document.getElementById('toggleProgress').checked = settings.progressBar;
 document.getElementById('toggleSound').checked = settings.sound;
 document.getElementById('toggleSilence').checked = settings.silenceMinute;
 applyTheme();
+applyPalette();
 
 /* ==================== ЗВУК + ВІБРО ==================== */
 let audioCtx = null;
@@ -1570,6 +2081,9 @@ if(!viewMode) viewMode = 'today';
 wrapEl.dataset.view = viewMode;
 updateViewToggleLabel();
 
+document.getElementById('printBtn').addEventListener('click', () => {
+  window.print();
+});
 document.getElementById('viewToggleBtn').addEventListener('click', () => {
   viewMode = (wrapEl.dataset.view === 'today') ? 'week' : 'today';
   wrapEl.dataset.view = viewMode;
