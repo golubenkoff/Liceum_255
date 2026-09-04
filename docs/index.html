@@ -159,7 +159,8 @@
       padding:0 !important;
       display:block !important;
     }
-    .wrap{ max-width:none !important; width:100% !important; }
+    .wrap{ max-width:100% !important; width:100% !important; margin:0 !important; }
+    .table-scroll{ max-width:100% !important; width:100% !important; }
 
     /* Лишаємо тільки заголовок і таблицю. */
     .settings-panel, .gear-btn, .status-card, .view-toggle, #todayView,
@@ -191,12 +192,23 @@
     }
     .table-scroll{ overflow:visible !important; }
 
-    /* Одна сторінка: альбомна орієнтація + заборона розривати рядки.
-       Розклад на 7 уроків × 5-6 днів у книжковій орієнтації переповзає на
-       другий аркуш, і другий аркуш — це майже завжди один зайвий рядок. */
-    @page{ size:A4 landscape; margin:10mm; }
+    /* Орієнтацію НЕ нав'язуємо — тільки поля.
+       Раніше тут стояло `size:A4 landscape`. Це виявилось джерелом обрізаного
+       правого краю: браузер рахує ширину розмітки за оголошеним розміром
+       сторінки, а друкує на тому аркуші, який обрано в діалозі. Щойно вони
+       розходяться (людина лишає книжкову, або принтер підставляє свій формат) —
+       широка розмітка не влазить у вузький аркуш, край зрізає, а решта
+       переповзає другим аркушем.
+       Тепер таблиця просто займає 100% тієї смуги друку, яка є, і однаково
+       вміщається і в книжковій, і в альбомній. */
+    @page{ margin:10mm; }
     table#schedule{
       width:100% !important;
+      /* min-width:600px з екранних стилів на папері зайвий: у книжковій
+         орієнтації він ширший за смугу друку, і таблиця вилазила за край,
+         а принтер додавав другий аркуш з обрізком. */
+      min-width:0 !important;
+      max-width:100% !important;
       border-collapse:collapse !important;
       border-radius:0 !important;
       overflow:visible !important;
@@ -229,13 +241,35 @@
       -webkit-print-color-adjust:exact;
       print-color-adjust:exact;
     }
-    #schedule .room{
-      background:none !important;
-      color:#000 !important;
-      border:1px solid #666 !important;
-      border-radius:0 !important;
-      font-size:8pt !important;
+    /* Кабінет на папері — просто підпис у нижньому кутку комірки, без рамки.
+       На екрані назва предмета й кабінет стоять в один рядок (flex), але у
+       вузькій друкованій колонці вони налазили один на одного: назва
+       переносилась, а чип із номером не стискався. Тому на друк розкладаємо
+       їх у два рядки. */
+    #schedule .lesson-cell{
+      display:block !important;
     }
+    #schedule .room{
+      display:block !important;
+      background:none !important;
+      color:#444 !important;
+      border:none !important;
+      border-radius:0 !important;
+      padding:0 !important;
+      margin:1px 0 0 !important;
+      font-size:7.5pt !important;
+      font-weight:400 !important;
+      line-height:1.1 !important;
+      text-align:right !important;
+    }
+    /* Довгі назви предметів мають переноситись, а не розпирати колонку. */
+    #schedule th, #schedule td{
+      overflow-wrap:anywhere !important;
+      word-break:normal !important;
+    }
+    /* Вузькі службові колонки — решту ширини віддаємо дням. */
+    #schedule td:first-child, #schedule th:first-child{ width:7mm !important; }
+    #schedule .time{ width:20mm !important; font-size:8.5pt !important; white-space:nowrap !important; }
 
     /* Кольорові стани → форма, а не колір. */
     tr.current-row, tr.break-row{ background:none !important; }
